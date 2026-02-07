@@ -3,8 +3,15 @@
 Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant. Execute code, inspect GameObjects, manage scenes, and debug with natural language.
 
 [![Unity](https://img.shields.io/badge/Unity-2021.3+-black?logo=unity)](https://unity.com)
+[![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.2.3+-green)](https://github.com/openclaw/openclaw)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![OpenClaw](https://img.shields.io/badge/OpenClaw-Compatible-green)](https://github.com/openclaw/openclaw)
+
+## Requirements
+
+| Component | Version |
+|-----------|---------|
+| **Unity** | 2021.3+ |
+| **OpenClaw** | 2026.2.3+ |
 
 ## Features
 
