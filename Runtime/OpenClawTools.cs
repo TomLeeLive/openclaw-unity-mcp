@@ -1003,7 +1003,7 @@ namespace OpenClaw.Unity
             {
                 var windows = new List<Dictionary<string, object>>();
                 
-                foreach (var window in UnityEditor.Resources.FindObjectsOfTypeAll<UnityEditor.EditorWindow>())
+                foreach (var window in Resources.FindObjectsOfTypeAll<UnityEditor.EditorWindow>())
                 {
                     windows.Add(new Dictionary<string, object>
                     {
