@@ -246,7 +246,6 @@ Done! Created 5 spheres at radius 3 from origin.
 
 ## ⚠️ Important Notes
 
-- **Unity-MCP Conflict**: Cannot use with `com.ivanmurzak.unity.mcp` package - remove it first
 - **Development Only**: Disable `allowCodeExecution` in production builds
 - **Unity 6**: Some versions may have UPM stability issues
 
