@@ -11,6 +11,8 @@ using System.Reflection;
 using System.Text;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace OpenClaw.Unity
 {
@@ -72,6 +74,18 @@ namespace OpenClaw.Unity
                 { "debug.log", DebugLog },
                 { "debug.screenshot", DebugScreenshot },
                 { "debug.hierarchy", DebugHierarchy },
+                
+                // Input (for game testing)
+                { "input.keyPress", InputKeyPress },
+                { "input.keyDown", InputKeyDown },
+                { "input.keyUp", InputKeyUp },
+                { "input.type", InputType },
+                { "input.mouseMove", InputMouseMove },
+                { "input.mouseClick", InputMouseClick },
+                { "input.mouseDrag", InputMouseDrag },
+                { "input.mouseScroll", InputMouseScroll },
+                { "input.getMousePosition", InputGetMousePosition },
+                { "input.clickUI", InputClickUI },
             };
         }
         
@@ -875,6 +889,424 @@ namespace OpenClaw.Unity
         
         #endregion
         
+        #region Input Tools
+        
+        // Static state for simulated input
+        private static Dictionary<KeyCode, bool> _simulatedKeys = new Dictionary<KeyCode, bool>();
+        private static Vector3 _simulatedMousePosition = Vector3.zero;
+        private static Dictionary<int, bool> _simulatedMouseButtons = new Dictionary<int, bool>();
+        
+        private object InputKeyPress(Dictionary<string, object> p)
+        {
+            var keyName = GetString(p, "key", "");
+            var duration = GetFloat(p, "duration", 0.1f);
+            
+            if (!TryParseKeyCode(keyName, out var keyCode))
+            {
+                return new { success = false, error = $"Unknown key: {keyName}. Use Unity KeyCode names (e.g., W, Space, LeftShift, Mouse0)" };
+            }
+            
+            // Queue the key press using a coroutine-like approach
+            SimulateKeyPress(keyCode, duration);
+            
+            return new { success = true, key = keyName, keyCode = keyCode.ToString(), duration = duration };
+        }
+        
+        private object InputKeyDown(Dictionary<string, object> p)
+        {
+            var keyName = GetString(p, "key", "");
+            
+            if (!TryParseKeyCode(keyName, out var keyCode))
+            {
+                return new { success = false, error = $"Unknown key: {keyName}" };
+            }
+            
+            _simulatedKeys[keyCode] = true;
+            QueueInputEvent(new InputEvent { Type = InputEventType.KeyDown, KeyCode = keyCode });
+            
+            return new { success = true, key = keyName, keyCode = keyCode.ToString(), state = "down" };
+        }
+        
+        private object InputKeyUp(Dictionary<string, object> p)
+        {
+            var keyName = GetString(p, "key", "");
+            
+            if (!TryParseKeyCode(keyName, out var keyCode))
+            {
+                return new { success = false, error = $"Unknown key: {keyName}" };
+            }
+            
+            _simulatedKeys[keyCode] = false;
+            QueueInputEvent(new InputEvent { Type = InputEventType.KeyUp, KeyCode = keyCode });
+            
+            return new { success = true, key = keyName, keyCode = keyCode.ToString(), state = "up" };
+        }
+        
+        private object InputType(Dictionary<string, object> p)
+        {
+            var text = GetString(p, "text", "");
+            var interval = GetFloat(p, "interval", 0.05f);
+            
+            if (string.IsNullOrEmpty(text))
+            {
+                return new { success = false, error = "No text provided" };
+            }
+            
+            // Find the currently focused input field and type into it
+            var eventSystem = EventSystem.current;
+            if (eventSystem != null && eventSystem.currentSelectedGameObject != null)
+            {
+                var inputField = eventSystem.currentSelectedGameObject.GetComponent<UnityEngine.UI.InputField>();
+                var tmpInputField = eventSystem.currentSelectedGameObject.GetComponent<TMPro.TMP_InputField>();
+                
+                if (inputField != null)
+                {
+                    inputField.text += text;
+                    return new { success = true, text = text, target = inputField.gameObject.name, method = "InputField" };
+                }
+                else if (tmpInputField != null)
+                {
+                    tmpInputField.text += text;
+                    return new { success = true, text = text, target = tmpInputField.gameObject.name, method = "TMP_InputField" };
+                }
+            }
+            
+            // Fallback: queue character events
+            foreach (var c in text)
+            {
+                QueueInputEvent(new InputEvent { Type = InputEventType.Character, Character = c });
+            }
+            
+            return new { success = true, text = text, method = "character_events", length = text.Length };
+        }
+        
+        private object InputMouseMove(Dictionary<string, object> p)
+        {
+            var x = GetFloat(p, "x", 0);
+            var y = GetFloat(p, "y", 0);
+            var normalized = GetBool(p, "normalized", false);
+            
+            Vector3 targetPos;
+            if (normalized)
+            {
+                // Convert from 0-1 range to screen coordinates
+                targetPos = new Vector3(x * Screen.width, y * Screen.height, 0);
+            }
+            else
+            {
+                targetPos = new Vector3(x, y, 0);
+            }
+            
+            _simulatedMousePosition = targetPos;
+            QueueInputEvent(new InputEvent { Type = InputEventType.MouseMove, Position = targetPos });
+            
+            return new { success = true, x = targetPos.x, y = targetPos.y, screenWidth = Screen.width, screenHeight = Screen.height };
+        }
+        
+        private object InputMouseClick(Dictionary<string, object> p)
+        {
+            var x = GetFloat(p, "x", -1);
+            var y = GetFloat(p, "y", -1);
+            var button = GetInt(p, "button", 0); // 0 = left, 1 = right, 2 = middle
+            var clicks = GetInt(p, "clicks", 1);
+            var normalized = GetBool(p, "normalized", false);
+            
+            Vector3 targetPos;
+            if (x < 0 || y < 0)
+            {
+                targetPos = _simulatedMousePosition;
+            }
+            else if (normalized)
+            {
+                targetPos = new Vector3(x * Screen.width, y * Screen.height, 0);
+            }
+            else
+            {
+                targetPos = new Vector3(x, y, 0);
+            }
+            
+            _simulatedMousePosition = targetPos;
+            
+            // Try to click UI element at position
+            var clickedUI = TryClickUIAtPosition(targetPos, button, clicks);
+            if (clickedUI != null)
+            {
+                return new { success = true, x = targetPos.x, y = targetPos.y, button = button, clicks = clicks, 
+                    target = clickedUI, method = "UI_EventSystem" };
+            }
+            
+            // Queue raw mouse click events
+            for (int i = 0; i < clicks; i++)
+            {
+                QueueInputEvent(new InputEvent { Type = InputEventType.MouseDown, Button = button, Position = targetPos });
+                QueueInputEvent(new InputEvent { Type = InputEventType.MouseUp, Button = button, Position = targetPos });
+            }
+            
+            return new { success = true, x = targetPos.x, y = targetPos.y, button = button, clicks = clicks, method = "raw_events" };
+        }
+        
+        private object InputMouseDrag(Dictionary<string, object> p)
+        {
+            var startX = GetFloat(p, "startX", 0);
+            var startY = GetFloat(p, "startY", 0);
+            var endX = GetFloat(p, "endX", 0);
+            var endY = GetFloat(p, "endY", 0);
+            var button = GetInt(p, "button", 0);
+            var steps = GetInt(p, "steps", 10);
+            var normalized = GetBool(p, "normalized", false);
+            
+            Vector3 start, end;
+            if (normalized)
+            {
+                start = new Vector3(startX * Screen.width, startY * Screen.height, 0);
+                end = new Vector3(endX * Screen.width, endY * Screen.height, 0);
+            }
+            else
+            {
+                start = new Vector3(startX, startY, 0);
+                end = new Vector3(endX, endY, 0);
+            }
+            
+            // Queue drag events
+            QueueInputEvent(new InputEvent { Type = InputEventType.MouseMove, Position = start });
+            QueueInputEvent(new InputEvent { Type = InputEventType.MouseDown, Button = button, Position = start });
+            
+            for (int i = 1; i <= steps; i++)
+            {
+                var t = (float)i / steps;
+                var pos = Vector3.Lerp(start, end, t);
+                QueueInputEvent(new InputEvent { Type = InputEventType.MouseMove, Position = pos });
+            }
+            
+            QueueInputEvent(new InputEvent { Type = InputEventType.MouseUp, Button = button, Position = end });
+            
+            _simulatedMousePosition = end;
+            
+            return new { success = true, startX = start.x, startY = start.y, endX = end.x, endY = end.y, button = button, steps = steps };
+        }
+        
+        private object InputMouseScroll(Dictionary<string, object> p)
+        {
+            var deltaX = GetFloat(p, "deltaX", 0);
+            var deltaY = GetFloat(p, "deltaY", 0);
+            
+            QueueInputEvent(new InputEvent { Type = InputEventType.MouseScroll, ScrollDelta = new Vector2(deltaX, deltaY) });
+            
+            return new { success = true, deltaX = deltaX, deltaY = deltaY };
+        }
+        
+        private object InputGetMousePosition(Dictionary<string, object> p)
+        {
+            var mousePos = Input.mousePosition;
+            return new { 
+                x = mousePos.x, 
+                y = mousePos.y, 
+                normalizedX = mousePos.x / Screen.width,
+                normalizedY = mousePos.y / Screen.height,
+                screenWidth = Screen.width,
+                screenHeight = Screen.height
+            };
+        }
+        
+        private object InputClickUI(Dictionary<string, object> p)
+        {
+            var targetName = GetString(p, "name", null);
+            var targetPath = GetString(p, "path", null);
+            var button = GetInt(p, "button", 0);
+            
+            GameObject target = null;
+            
+            if (!string.IsNullOrEmpty(targetPath))
+            {
+                target = GameObject.Find(targetPath);
+            }
+            else if (!string.IsNullOrEmpty(targetName))
+            {
+                // Find by name, preferring UI elements
+                var allObjects = UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+                target = allObjects.FirstOrDefault(go => go.name == targetName && go.GetComponent<RectTransform>() != null)
+                      ?? allObjects.FirstOrDefault(go => go.name == targetName);
+            }
+            
+            if (target == null)
+            {
+                return new { success = false, error = $"UI element not found: {targetName ?? targetPath}" };
+            }
+            
+            // Check for Button component and click it
+            var btn = target.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.Invoke();
+                return new { success = true, target = target.name, method = "Button.onClick" };
+            }
+            
+            // Check for Toggle
+            var toggle = target.GetComponent<Toggle>();
+            if (toggle != null)
+            {
+                toggle.isOn = !toggle.isOn;
+                return new { success = true, target = target.name, method = "Toggle", isOn = toggle.isOn };
+            }
+            
+            // Try pointer events
+            var pointerData = new PointerEventData(EventSystem.current)
+            {
+                position = RectTransformUtility.WorldToScreenPoint(null, target.transform.position),
+                button = (PointerEventData.InputButton)button
+            };
+            
+            ExecuteEvents.Execute(target, pointerData, ExecuteEvents.pointerClickHandler);
+            
+            return new { success = true, target = target.name, method = "PointerClick" };
+        }
+        
+        // Input simulation helpers
+        private enum InputEventType { KeyDown, KeyUp, Character, MouseMove, MouseDown, MouseUp, MouseScroll }
+        
+        private struct InputEvent
+        {
+            public InputEventType Type;
+            public KeyCode KeyCode;
+            public char Character;
+            public int Button;
+            public Vector3 Position;
+            public Vector2 ScrollDelta;
+        }
+        
+        private static Queue<InputEvent> _inputEventQueue = new Queue<InputEvent>();
+        
+        private void QueueInputEvent(InputEvent evt)
+        {
+            _inputEventQueue.Enqueue(evt);
+        }
+        
+        private void SimulateKeyPress(KeyCode keyCode, float duration)
+        {
+            _simulatedKeys[keyCode] = true;
+            QueueInputEvent(new InputEvent { Type = InputEventType.KeyDown, KeyCode = keyCode });
+            // Note: In a real implementation, we'd use a coroutine to delay the key up
+            // For now, we immediately queue the key up
+            QueueInputEvent(new InputEvent { Type = InputEventType.KeyUp, KeyCode = keyCode });
+            _simulatedKeys[keyCode] = false;
+        }
+        
+        private bool TryParseKeyCode(string keyName, out KeyCode keyCode)
+        {
+            keyCode = KeyCode.None;
+            if (string.IsNullOrEmpty(keyName)) return false;
+            
+            // Try direct parse
+            if (Enum.TryParse<KeyCode>(keyName, true, out keyCode))
+                return true;
+            
+            // Common aliases
+            var aliases = new Dictionary<string, KeyCode>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "left", KeyCode.LeftArrow },
+                { "right", KeyCode.RightArrow },
+                { "up", KeyCode.UpArrow },
+                { "down", KeyCode.DownArrow },
+                { "enter", KeyCode.Return },
+                { "esc", KeyCode.Escape },
+                { "ctrl", KeyCode.LeftControl },
+                { "alt", KeyCode.LeftAlt },
+                { "shift", KeyCode.LeftShift },
+                { "lmb", KeyCode.Mouse0 },
+                { "rmb", KeyCode.Mouse1 },
+                { "mmb", KeyCode.Mouse2 },
+            };
+            
+            if (aliases.TryGetValue(keyName, out keyCode))
+                return true;
+            
+            // Single character
+            if (keyName.Length == 1)
+            {
+                var c = char.ToUpper(keyName[0]);
+                if (c >= 'A' && c <= 'Z')
+                {
+                    keyCode = (KeyCode)c;
+                    return true;
+                }
+                if (c >= '0' && c <= '9')
+                {
+                    keyCode = KeyCode.Alpha0 + (c - '0');
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        private string TryClickUIAtPosition(Vector3 screenPos, int button, int clicks)
+        {
+            var eventSystem = EventSystem.current;
+            if (eventSystem == null) return null;
+            
+            var pointerData = new PointerEventData(eventSystem)
+            {
+                position = screenPos,
+                button = (PointerEventData.InputButton)button,
+                clickCount = clicks
+            };
+            
+            var results = new List<RaycastResult>();
+            eventSystem.RaycastAll(pointerData, results);
+            
+            if (results.Count > 0)
+            {
+                var target = results[0].gameObject;
+                
+                // Try button click
+                var btn = target.GetComponentInParent<Button>();
+                if (btn != null)
+                {
+                    btn.onClick.Invoke();
+                    return btn.gameObject.name;
+                }
+                
+                // Try input field focus
+                var inputField = target.GetComponentInParent<UnityEngine.UI.InputField>();
+                if (inputField != null)
+                {
+                    eventSystem.SetSelectedGameObject(inputField.gameObject);
+                    return inputField.gameObject.name;
+                }
+                
+                var tmpInput = target.GetComponentInParent<TMPro.TMP_InputField>();
+                if (tmpInput != null)
+                {
+                    eventSystem.SetSelectedGameObject(tmpInput.gameObject);
+                    return tmpInput.gameObject.name;
+                }
+                
+                // Generic pointer click
+                ExecuteEvents.Execute(target, pointerData, ExecuteEvents.pointerClickHandler);
+                return target.name;
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Check if a simulated key is pressed (for custom input handling)
+        /// </summary>
+        public static bool IsKeyPressed(KeyCode keyCode)
+        {
+            return _simulatedKeys.TryGetValue(keyCode, out var pressed) && pressed;
+        }
+        
+        /// <summary>
+        /// Get the simulated mouse position
+        /// </summary>
+        public static Vector3 GetSimulatedMousePosition()
+        {
+            return _simulatedMousePosition;
+        }
+        
+        #endregion
+        
         #region Helpers
         
         private string GetToolDescription(string name)
@@ -911,6 +1343,16 @@ namespace OpenClaw.Unity
                 "debug.log" => "Write to Unity console",
                 "debug.screenshot" => "Capture screenshot",
                 "debug.hierarchy" => "Get text hierarchy view",
+                "input.keyPress" => "Press and release a key (params: key, duration)",
+                "input.keyDown" => "Press and hold a key (params: key)",
+                "input.keyUp" => "Release a key (params: key)",
+                "input.type" => "Type text into focused input field (params: text)",
+                "input.mouseMove" => "Move mouse to position (params: x, y, normalized)",
+                "input.mouseClick" => "Click at position (params: x, y, button, clicks, normalized)",
+                "input.mouseDrag" => "Drag from start to end (params: startX, startY, endX, endY, button, steps)",
+                "input.mouseScroll" => "Scroll mouse wheel (params: deltaX, deltaY)",
+                "input.getMousePosition" => "Get current mouse position",
+                "input.clickUI" => "Click a UI element by name (params: name or path)",
                 _ => name
             };
         }
