@@ -1,0 +1,91 @@
+/*
+ * OpenClaw Unity Bridge
+ * https://github.com/openclaw/unity-bridge
+ * MIT License
+ */
+
+using UnityEngine;
+
+namespace OpenClaw.Unity
+{
+    /// <summary>
+    /// Configuration for OpenClaw Unity Bridge.
+    /// Create via Assets > Create > OpenClaw > Config
+    /// </summary>
+    [CreateAssetMenu(fileName = "OpenClawConfig", menuName = "OpenClaw/Config", order = 1)]
+    public class OpenClawConfig : ScriptableObject
+    {
+        [Header("Connection")]
+        [Tooltip("OpenClaw Gateway URL (e.g., http://localhost:3000)")]
+        public string gatewayUrl = "http://localhost:3000";
+        
+        [Tooltip("API Token for authentication (optional, depends on gateway config)")]
+        public string apiToken = "";
+        
+        [Header("Settings")]
+        [Tooltip("Automatically connect when Unity starts")]
+        public bool autoConnect = true;
+        
+        [Tooltip("Show connection status in Game view")]
+        public bool showStatusOverlay = true;
+        
+        [Tooltip("Request timeout in seconds")]
+        public float requestTimeout = 30f;
+        
+        [Tooltip("Heartbeat interval in seconds (0 to disable)")]
+        public float heartbeatInterval = 30f;
+        
+        [Header("Logging")]
+        [Tooltip("Capture Unity console logs for AI debugging")]
+        public bool captureConsoleLogs = true;
+        
+        [Tooltip("Maximum log entries to keep in memory")]
+        public int maxLogEntries = 1000;
+        
+        [Tooltip("Log level to capture")]
+        public LogLevel minLogLevel = LogLevel.Warning;
+        
+        [Header("Security")]
+        [Tooltip("Allow code execution via AI (DANGEROUS - use only in development)")]
+        public bool allowCodeExecution = true;
+        
+        [Tooltip("Allow file system access")]
+        public bool allowFileAccess = true;
+        
+        [Tooltip("Allow scene modifications")]
+        public bool allowSceneModification = true;
+        
+        public enum LogLevel
+        {
+            Log = 0,
+            Warning = 1,
+            Error = 2,
+            Exception = 3
+        }
+        
+        private static OpenClawConfig _instance;
+        
+        public static OpenClawConfig Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = Resources.Load<OpenClawConfig>("OpenClawConfig");
+                    if (_instance == null)
+                    {
+                        Debug.LogWarning("[OpenClaw] Config not found in Resources. Using defaults.");
+                        _instance = CreateInstance<OpenClawConfig>();
+                    }
+                }
+                return _instance;
+            }
+        }
+        
+        public string GetFullUrl(string endpoint)
+        {
+            var baseUrl = gatewayUrl.TrimEnd('/');
+            return $"{baseUrl}/{endpoint.TrimStart('/')}";
+        }
+    }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "com.openclaw.unity-bridge",
+  "displayName": "OpenClaw Unity Bridge",
+  "version": "1.0.0",
+  "unity": "2021.3",
+  "description": "Connect Unity to OpenClaw AI assistant via HTTP. Execute code, inspect GameObjects, manage scenes, and debug with natural language.",
+  "author": {
+    "name": "OpenClaw",
+    "url": "https://github.com/openclaw"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openclaw/unity-bridge.git"
+  },
+  "keywords": [
+    "AI",
+    "OpenClaw",
+    "Bridge",
+    "Assistant",
+    "Automation",
+    "Code Generation"
+  ],
+  "license": "MIT",
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Basic Setup",
+      "description": "Basic scene with OpenClaw bridge configured",
+      "path": "Samples~/BasicSetup"
+    }
+  ]
+}
