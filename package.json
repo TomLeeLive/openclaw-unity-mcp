@@ -1,22 +1,21 @@
 {
-  "name": "com.tomleelive.openclaw-unity-mcp",
-  "displayName": "OpenClaw Unity MCP",
+  "name": "com.tomleelive.openclaw-unity-plugin",
+  "displayName": "OpenClaw Unity Plugin",
   "version": "1.1.0",
   "unity": "2021.3",
-  "description": "Connect Unity to OpenClaw AI assistant via MCP (Model Context Protocol). Works in Editor & Play mode. Execute code, inspect GameObjects, manage scenes, and debug with natural language.",
+  "description": "Connect Unity to OpenClaw AI assistant. Works in Editor & Play mode. Execute code, inspect GameObjects, manage scenes, and debug with natural language.",
   "author": {
     "name": "TomLeeLive",
     "url": "https://github.com/TomLeeLive"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TomLeeLive/openclaw-unity-mcp.git"
+    "url": "https://github.com/TomLeeLive/openclaw-unity-plugin.git"
   },
   "keywords": [
     "AI",
     "OpenClaw",
-    "MCP",
-    "Model Context Protocol",
+    "Plugin",
     "Assistant",
     "Automation",
     "Code Generation"
@@ -26,7 +25,7 @@
   "samples": [
     {
       "displayName": "Basic Setup",
-      "description": "Basic scene with OpenClaw MCP configured",
+      "description": "Basic scene with OpenClaw plugin configured",
       "path": "Samples~/BasicSetup"
     }
   ]

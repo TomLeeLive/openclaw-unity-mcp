@@ -1,6 +1,6 @@
-# 🐾 OpenClaw Unity MCP
+# 🐾 OpenClaw Unity Plugin
 
-Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant via MCP (Model Context Protocol). Works in **Editor mode** without hitting Play!
+Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant via HTTP. Works in **Editor mode** without hitting Play!
 
 [![Unity](https://img.shields.io/badge/Unity-2021.3+-black?logo=unity)](https://unity.com)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.2.3+-green)](https://github.com/openclaw/openclaw)
@@ -31,7 +31,7 @@ Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant v
 2. Click `+` → `Add package from git URL...`
 3. Enter:
    ```
-   https://github.com/TomLeeLive/openclaw-unity-mcp.git
+   https://github.com/TomLeeLive/openclaw-unity-plugin.git
    ```
 
 ### Option 2: Local Package

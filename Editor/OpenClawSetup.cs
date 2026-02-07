@@ -1,6 +1,6 @@
 /*
- * OpenClaw Unity MCP
- * https://github.com/TomLeeLive/openclaw-unity-mcp
+ * OpenClaw Unity Plugin
+ * https://github.com/TomLeeLive/openclaw-unity-plugin
  * MIT License
  */
 
@@ -11,7 +11,7 @@ using UnityEditor.SceneManagement;
 namespace OpenClaw.Unity.Editor
 {
     /// <summary>
-    /// Setup utilities for OpenClaw Unity MCP.
+    /// Setup utilities for OpenClaw Unity Plugin.
     /// </summary>
     public static class OpenClawSetup
     {
@@ -109,7 +109,7 @@ namespace OpenClaw.Unity.Editor
         [MenuItem("Window/OpenClaw Bridge/Documentation", false, 100)]
         public static void OpenDocumentation()
         {
-            Application.OpenURL("https://github.com/TomLeeLive/openclaw-unity-mcp");
+            Application.OpenURL("https://github.com/TomLeeLive/openclaw-unity-plugin");
         }
     }
 }

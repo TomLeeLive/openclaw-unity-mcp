@@ -1,6 +1,6 @@
 /*
- * OpenClaw Unity MCP
- * https://github.com/TomLeeLive/openclaw-unity-mcp
+ * OpenClaw Unity Plugin
+ * https://github.com/TomLeeLive/openclaw-unity-plugin
  * MIT License
  */
 
@@ -9,7 +9,7 @@ using UnityEngine;
 namespace OpenClaw.Unity
 {
     /// <summary>
-    /// Configuration for OpenClaw Unity MCP.
+    /// Configuration for OpenClaw Unity Plugin.
     /// Create via Assets > Create > OpenClaw > Config
     /// </summary>
     [CreateAssetMenu(fileName = "OpenClawConfig", menuName = "OpenClaw/Config", order = 1)]

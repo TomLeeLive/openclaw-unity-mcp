@@ -1,6 +1,6 @@
 /*
- * OpenClaw Unity MCP
- * https://github.com/TomLeeLive/openclaw-unity-mcp
+ * OpenClaw Unity Plugin
+ * https://github.com/TomLeeLive/openclaw-unity-plugin
  * MIT License
  */
 

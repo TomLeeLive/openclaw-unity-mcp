@@ -12,8 +12,8 @@ All notable changes to this project will be documented in this file.
 - Main thread execution queue for thread-safe tool calls
 
 ### Changed
-- Renamed package from `openclaw-unity-bridge` to `openclaw-unity-mcp`
-- Display name changed to "OpenClaw Unity MCP"
+- Renamed package from `openclaw-unity-bridge` to `openclaw-unity-plugin`
+- Display name changed to "OpenClaw Unity Plugin"
 - Connection maintained across Edit/Play mode transitions
 - Deferred initialization to avoid Unity 6 UPM crashes
 

@@ -1,7 +1,7 @@
 /*
- * OpenClaw Unity MCP - Editor Connection
+ * OpenClaw Unity Plugin - Editor Connection
  * Works in Edit mode without Play button using EditorApplication.update
- * https://github.com/TomLeeLive/openclaw-unity-mcp
+ * https://github.com/TomLeeLive/openclaw-unity-plugin
  * MIT License
  */
 

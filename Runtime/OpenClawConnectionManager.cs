@@ -1,7 +1,7 @@
 /*
- * OpenClaw Unity MCP - Unified Connection Manager
+ * OpenClaw Unity Plugin - Unified Connection Manager
  * Works in both Editor and Play mode
- * https://github.com/TomLeeLive/openclaw-unity-mcp
+ * https://github.com/TomLeeLive/openclaw-unity-plugin
  * MIT License
  */
 
