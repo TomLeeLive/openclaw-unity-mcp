@@ -989,17 +989,23 @@ namespace OpenClaw.Unity
             if (eventSystem != null && eventSystem.currentSelectedGameObject != null)
             {
                 var inputField = eventSystem.currentSelectedGameObject.GetComponent<UnityEngine.UI.InputField>();
-                var tmpInputField = eventSystem.currentSelectedGameObject.GetComponent<TMPro.TMP_InputField>();
-                
                 if (inputField != null)
                 {
                     inputField.text += text;
                     return new { success = true, text = text, target = inputField.gameObject.name, method = "InputField" };
                 }
-                else if (tmpInputField != null)
+                
+                // Try TMP_InputField via reflection (avoids hard dependency on TextMeshPro)
+                var tmpInputField = GetTMPInputField(eventSystem.currentSelectedGameObject);
+                if (tmpInputField != null)
                 {
-                    tmpInputField.text += text;
-                    return new { success = true, text = text, target = tmpInputField.gameObject.name, method = "TMP_InputField" };
+                    var textProp = tmpInputField.GetType().GetProperty("text");
+                    if (textProp != null)
+                    {
+                        var currentText = textProp.GetValue(tmpInputField) as string ?? "";
+                        textProp.SetValue(tmpInputField, currentText + text);
+                        return new { success = true, text = text, target = (tmpInputField as Component)?.gameObject.name, method = "TMP_InputField" };
+                    }
                 }
             }
             
@@ -1306,11 +1312,12 @@ namespace OpenClaw.Unity
                     return inputField.gameObject.name;
                 }
                 
-                var tmpInput = target.GetComponentInParent<TMPro.TMP_InputField>();
+                // Try TMP_InputField via reflection
+                var tmpInput = GetTMPInputFieldInParent(target);
                 if (tmpInput != null)
                 {
-                    eventSystem.SetSelectedGameObject(tmpInput.gameObject);
-                    return tmpInput.gameObject.name;
+                    eventSystem.SetSelectedGameObject((tmpInput as Component)?.gameObject);
+                    return (tmpInput as Component)?.gameObject.name;
                 }
                 
                 // Generic pointer click
@@ -1319,6 +1326,38 @@ namespace OpenClaw.Unity
             }
             
             return null;
+        }
+        
+        // Helper to get TMP_InputField without hard dependency
+        private static Type _tmpInputFieldType;
+        private static bool _tmpTypeSearched;
+        
+        private object GetTMPInputField(GameObject go)
+        {
+            if (go == null) return null;
+            EnsureTMPType();
+            if (_tmpInputFieldType == null) return null;
+            return go.GetComponent(_tmpInputFieldType);
+        }
+        
+        private object GetTMPInputFieldInParent(GameObject go)
+        {
+            if (go == null) return null;
+            EnsureTMPType();
+            if (_tmpInputFieldType == null) return null;
+            return go.GetComponentInParent(_tmpInputFieldType);
+        }
+        
+        private static void EnsureTMPType()
+        {
+            if (_tmpTypeSearched) return;
+            _tmpTypeSearched = true;
+            
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                _tmpInputFieldType = assembly.GetType("TMPro.TMP_InputField");
+                if (_tmpInputFieldType != null) break;
+            }
         }
         
         /// <summary>
