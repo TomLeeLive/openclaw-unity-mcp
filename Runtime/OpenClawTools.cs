@@ -75,6 +75,10 @@ namespace OpenClaw.Unity
                 { "debug.screenshot", DebugScreenshot },
                 { "debug.hierarchy", DebugHierarchy },
                 
+                // Editor (Unity Editor control)
+                { "editor.refresh", EditorRefresh },
+                { "editor.recompile", EditorRecompile },
+                
                 // Input (for game testing)
                 { "input.keyPress", InputKeyPress },
                 { "input.keyDown", InputKeyDown },
@@ -889,6 +893,34 @@ namespace OpenClaw.Unity
         
         #endregion
         
+        #region Editor Tools
+        
+        private object EditorRefresh(Dictionary<string, object> p)
+        {
+            #if UNITY_EDITOR
+            var importOptions = GetBool(p, "forceUpdate", false) 
+                ? UnityEditor.ImportAssetOptions.ForceUpdate 
+                : UnityEditor.ImportAssetOptions.Default;
+            
+            UnityEditor.AssetDatabase.Refresh(importOptions);
+            return new { success = true, action = "AssetDatabase.Refresh", forceUpdate = GetBool(p, "forceUpdate", false) };
+            #else
+            return new { success = false, error = "Only available in Editor" };
+            #endif
+        }
+        
+        private object EditorRecompile(Dictionary<string, object> p)
+        {
+            #if UNITY_EDITOR
+            UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+            return new { success = true, action = "RequestScriptCompilation" };
+            #else
+            return new { success = false, error = "Only available in Editor" };
+            #endif
+        }
+        
+        #endregion
+        
         #region Input Tools
         
         // Static state for simulated input
@@ -1343,6 +1375,8 @@ namespace OpenClaw.Unity
                 "debug.log" => "Write to Unity console",
                 "debug.screenshot" => "Capture screenshot",
                 "debug.hierarchy" => "Get text hierarchy view",
+                "editor.refresh" => "Refresh AssetDatabase and recompile if needed (params: forceUpdate)",
+                "editor.recompile" => "Request script recompilation",
                 "input.keyPress" => "Press and release a key (params: key, duration)",
                 "input.keyDown" => "Press and hold a key (params: key)",
                 "input.keyUp" => "Release a key (params: key)",
