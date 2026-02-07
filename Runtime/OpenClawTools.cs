@@ -769,8 +769,17 @@ namespace OpenClaw.Unity
                 var camera = Camera.main;
                 if (camera != null)
                 {
-                    int width = Screen.width > 0 ? Screen.width : 1920;
-                    int height = Screen.height > 0 ? Screen.height : 1080;
+                    // Get resolution from parameters or use sensible defaults
+                    // Screen.width/height can be wrong in Editor
+                    int width = GetInt(p, "width", 0);
+                    int height = GetInt(p, "height", 0);
+                    
+                    if (width <= 0 || height <= 0)
+                    {
+                        // Try to get from camera's pixel rect, fallback to 1920x1080
+                        width = camera.pixelWidth > 100 ? camera.pixelWidth : 1920;
+                        height = camera.pixelHeight > 100 ? camera.pixelHeight : 1080;
+                    }
                     
                     var rt = new RenderTexture(width, height, 24);
                     camera.targetTexture = rt;
