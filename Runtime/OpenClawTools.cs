@@ -763,10 +763,77 @@ namespace OpenClaw.Unity
             var filename = GetString(p, "filename", $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png");
             var path = System.IO.Path.Combine(Application.persistentDataPath, filename);
             
-            ScreenCapture.CaptureScreenshot(path);
-            
-            return new { success = true, path = path };
+            try
+            {
+                // Use CaptureScreenshotAsTexture for immediate capture (requires Play mode)
+                if (Application.isPlaying)
+                {
+                    var texture = ScreenCapture.CaptureScreenshotAsTexture();
+                    if (texture != null)
+                    {
+                        var bytes = texture.EncodeToPNG();
+                        System.IO.File.WriteAllBytes(path, bytes);
+                        UnityEngine.Object.Destroy(texture);
+                        return new { success = true, path = path, method = "immediate" };
+                    }
+                    else
+                    {
+                        return new { success = false, error = "Failed to capture screenshot texture" };
+                    }
+                }
+                else
+                {
+                    #if UNITY_EDITOR
+                    // In Editor mode without Play, use EditorWindow capture
+                    var gameView = GetGameViewRenderTexture();
+                    if (gameView != null)
+                    {
+                        var texture = new Texture2D(gameView.width, gameView.height, TextureFormat.RGB24, false);
+                        RenderTexture.active = gameView;
+                        texture.ReadPixels(new Rect(0, 0, gameView.width, gameView.height), 0, 0);
+                        texture.Apply();
+                        RenderTexture.active = null;
+                        
+                        var bytes = texture.EncodeToPNG();
+                        System.IO.File.WriteAllBytes(path, bytes);
+                        UnityEngine.Object.Destroy(texture);
+                        return new { success = true, path = path, method = "editor_gameview" };
+                    }
+                    #endif
+                    
+                    return new { success = false, error = "Screenshot requires Play mode or Editor Game View" };
+                }
+            }
+            catch (System.Exception e)
+            {
+                return new { success = false, error = e.Message };
+            }
         }
+        
+        #if UNITY_EDITOR
+        private RenderTexture GetGameViewRenderTexture()
+        {
+            try
+            {
+                var assembly = typeof(UnityEditor.EditorWindow).Assembly;
+                var gameViewType = assembly.GetType("UnityEditor.GameView");
+                var gameView = UnityEditor.EditorWindow.GetWindow(gameViewType, false, null, false);
+                
+                if (gameView != null)
+                {
+                    var renderTextureField = gameViewType.GetField("m_RenderTexture", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    
+                    if (renderTextureField != null)
+                    {
+                        return renderTextureField.GetValue(gameView) as RenderTexture;
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
+        #endif
         
         private object DebugHierarchy(Dictionary<string, object> p)
         {
