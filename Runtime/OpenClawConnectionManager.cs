@@ -373,7 +373,24 @@ namespace OpenClaw.Unity
                 var command = ParseJson(json);
                 var tool = command.TryGetValue("tool", out var t) ? t?.ToString() : null;
                 var requestId = command.TryGetValue("requestId", out var r) ? r?.ToString() : null;
-                var parameters = command.TryGetValue("parameters", out var p) ? p?.ToString() : "{}";
+                
+                // Handle parameters - could be string, dictionary, or null
+                string parameters = "{}";
+                if (command.TryGetValue("parameters", out var p) && p != null)
+                {
+                    if (p is string ps)
+                    {
+                        parameters = ps;
+                    }
+                    else if (p is Dictionary<string, object> pd)
+                    {
+                        parameters = DictionaryToJson(pd);
+                    }
+                    else
+                    {
+                        parameters = p.ToString();
+                    }
+                }
                 
                 Debug.Log($"[OpenClaw] Received command: {tool}");
                 OnCommandReceived?.Invoke(json);
@@ -598,6 +615,8 @@ namespace OpenClaw.Unity
                         result[key] = false;
                     else if (value == "null")
                         result[key] = null;
+                    else if (value.StartsWith("{") && value.EndsWith("}"))
+                        result[key] = ParseJson(value); // Recursively parse nested objects
                     else if (float.TryParse(value, out var f))
                         result[key] = f;
                     else
