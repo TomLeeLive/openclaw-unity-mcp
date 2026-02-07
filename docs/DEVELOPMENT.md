@@ -381,6 +381,26 @@ openclaw gateway status
    curl http://localhost:18789/unity/status
    ```
 
+### 자주 발생하는 실수
+
+#### ❌ UnityEditor.Resources (존재하지 않음)
+
+```csharp
+// 잘못된 코드 - 컴파일 에러 발생
+var windows = UnityEditor.Resources.FindObjectsOfTypeAll<EditorWindow>();
+```
+
+#### ✅ Resources.FindObjectsOfTypeAll (올바른 방법)
+
+```csharp
+// 올바른 코드 - UnityEngine.Resources 사용
+var windows = Resources.FindObjectsOfTypeAll<UnityEditor.EditorWindow>();
+```
+
+> **참고:** `Resources.FindObjectsOfTypeAll`은 `UnityEngine.Resources` 클래스의 메서드입니다.
+> Editor 전용 타입(예: `EditorWindow`)을 찾을 때도 `UnityEngine.Resources`를 사용해야 합니다.
+> `UnityEditor.Resources` 네임스페이스는 존재하지 않습니다. (v1.2.1에서 수정됨)
+
 ---
 
 ## 기여 가이드라인

@@ -1,6 +1,6 @@
 # 🧪 OpenClaw Unity Plugin - Testing Guide
 
-이 문서는 OpenClaw Unity Plugin의 테스트 가이드입니다. 모든 42개 도구의 사용법과 예제를 포함합니다.
+이 문서는 OpenClaw Unity Plugin의 테스트 가이드입니다. 모든 44개 도구의 사용법과 예제를 포함합니다.
 
 ## 목차
 
