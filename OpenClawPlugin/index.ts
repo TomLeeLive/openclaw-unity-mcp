@@ -285,16 +285,22 @@ const plugin = {
         required: ["tool"] as const,
       },
       execute: async (_toolCallId: string, args: any) => {
+        // Helper to format result for OpenClaw
+        const jsonResult = (payload: any) => ({
+          content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+          details: payload,
+        });
+        
         // Extract parameters
         const tool = args?.tool;
         const parameters = args?.parameters;
         const sessionId = args?.sessionId;
         
         if (!tool) {
-          return {
+          return jsonResult({
             success: false,
             error: "Missing 'tool' parameter. Specify which Unity tool to execute (e.g., 'debug.hierarchy', 'gameobject.find').",
-          };
+          });
         }
         
         // Find session
@@ -309,10 +315,10 @@ const plugin = {
         }
         
         if (!session) {
-          return {
+          return jsonResult({
             success: false,
             error: "No Unity session connected. Make sure Unity is running with OpenClaw Bridge in Play mode.",
-          };
+          });
         }
         
         // Create command
@@ -336,25 +342,25 @@ const plugin = {
             session.results.delete(requestId);
             
             if (result.success) {
-              return {
+              return jsonResult({
                 success: true,
                 result: result.result,
-              };
+              });
             } else {
-              return {
+              return jsonResult({
                 success: false,
                 error: result.error,
-              };
+              });
             }
           }
           
           await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        return {
+        return jsonResult({
           success: false,
           error: "Timeout waiting for Unity response. Make sure Unity is in Play mode and the bridge is active.",
-        };
+        });
       },
     });
     
@@ -378,10 +384,15 @@ const plugin = {
           tools: s.tools.length,
         }));
         
-        return {
+        const payload = {
           success: true,
           sessions: activeSessions,
           count: activeSessions.length,
+        };
+        
+        return {
+          content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+          details: payload,
         };
       },
     });
