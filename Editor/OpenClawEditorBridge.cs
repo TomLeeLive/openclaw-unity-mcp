@@ -1,6 +1,7 @@
 /*
  * OpenClaw Unity Plugin - Editor Connection
  * Works in Edit mode without Play button using EditorApplication.update
+ * Survives Play mode transitions via SessionState persistence
  * https://github.com/TomLeeLive/openclaw-unity-plugin
  * MIT License
  */
@@ -15,6 +16,7 @@ namespace OpenClaw.Unity.Editor
     /// <summary>
     /// Editor-time connection handler that uses EditorApplication.update for polling.
     /// This ensures MCP stays connected even when not in Play mode.
+    /// Uses SessionState to survive domain reloads during Play mode transitions.
     /// </summary>
     [InitializeOnLoad]
     public static class OpenClawEditorBridge
@@ -25,6 +27,11 @@ namespace OpenClaw.Unity.Editor
         private static OpenClawLogger _logger;
         private static float _initDelay = 2f; // Wait 2 seconds after editor loads
         private static double _startTime;
+        
+        // SessionState keys for persisting across domain reloads
+        private const string SESSION_ID_KEY = "OpenClaw_SessionId";
+        private const string WAS_CONNECTED_KEY = "OpenClaw_WasConnected";
+        private const string PLAY_MODE_TRANSITION_KEY = "OpenClaw_PlayModeTransition";
         
         /// <summary>
         /// Static constructor runs when Unity Editor loads.
@@ -71,6 +78,7 @@ namespace OpenClaw.Unity.Editor
                 EditorApplication.update += OnEditorUpdate;
                 EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
                 EditorApplication.quitting += OnQuitting;
+                AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             }
             
             // Load config
@@ -96,16 +104,59 @@ namespace OpenClaw.Unity.Editor
                 }
             }
             
+            // Check if we're recovering from a domain reload
+            bool wasInTransition = SessionState.GetBool(PLAY_MODE_TRANSITION_KEY, false);
+            bool wasConnected = SessionState.GetBool(WAS_CONNECTED_KEY, false);
+            string savedSessionId = SessionState.GetString(SESSION_ID_KEY, null);
+            
+            // Clear the transition flag
+            SessionState.SetBool(PLAY_MODE_TRANSITION_KEY, false);
+            
             // Initialize the unified connection manager
             try
             {
-                OpenClawConnectionManager.Instance.Initialize(_config, _logger);
-                // Delay the log message to avoid UPM pipe issues
-                EditorApplication.delayCall += () => Debug.Log("[OpenClaw Editor] Initialized");
+                var manager = OpenClawConnectionManager.Instance;
+                manager.Initialize(_config, _logger);
+                
+                // If we had a connection before domain reload, reconnect quickly
+                if (wasInTransition && wasConnected)
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        Debug.Log($"[OpenClaw Editor] Reconnecting after Play mode transition...");
+                        manager.ConnectAsync();
+                    };
+                }
+                else
+                {
+                    // Normal initialization
+                    EditorApplication.delayCall += () => Debug.Log("[OpenClaw Editor] Initialized");
+                }
             }
             catch (Exception e)
             {
                 EditorApplication.delayCall += () => Debug.LogWarning($"[OpenClaw] Init failed: {e.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Save state before assembly reload (domain reload).
+        /// </summary>
+        private static void OnBeforeAssemblyReload()
+        {
+            SaveConnectionState();
+        }
+        
+        /// <summary>
+        /// Save current connection state to SessionState.
+        /// </summary>
+        private static void SaveConnectionState()
+        {
+            var manager = OpenClawConnectionManager.Instance;
+            if (manager != null)
+            {
+                SessionState.SetBool(WAS_CONNECTED_KEY, manager.IsConnected);
+                SessionState.SetString(SESSION_ID_KEY, manager.SessionId ?? "");
             }
         }
         
@@ -170,15 +221,37 @@ namespace OpenClaw.Unity.Editor
         /// </summary>
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            if (!_initialized) return;
-            
             switch (state)
             {
-                case PlayModeStateChange.EnteredEditMode:
-                    // Verify connection is still active
+                case PlayModeStateChange.ExitingEditMode:
+                    // About to enter Play mode - save state before domain reload
+                    SessionState.SetBool(PLAY_MODE_TRANSITION_KEY, true);
+                    SaveConnectionState();
+                    Debug.Log("[OpenClaw] Saving connection state before Play mode...");
+                    break;
+                    
+                case PlayModeStateChange.EnteredPlayMode:
+                    // Just entered Play mode - reconnect if we were connected
+                    if (!_initialized) Initialize();
                     if (!IsConnected && _config != null && _config.autoConnect)
                     {
-                        Connect();
+                        EditorApplication.delayCall += Connect;
+                    }
+                    break;
+                    
+                case PlayModeStateChange.ExitingPlayMode:
+                    // About to exit Play mode - save state
+                    SessionState.SetBool(PLAY_MODE_TRANSITION_KEY, true);
+                    SaveConnectionState();
+                    Debug.Log("[OpenClaw] Saving connection state before exiting Play mode...");
+                    break;
+                    
+                case PlayModeStateChange.EnteredEditMode:
+                    // Back to Edit mode - reconnect if we were connected
+                    if (!_initialized) Initialize();
+                    if (!IsConnected && _config != null && _config.autoConnect)
+                    {
+                        EditorApplication.delayCall += Connect;
                     }
                     break;
             }

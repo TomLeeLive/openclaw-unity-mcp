@@ -168,6 +168,25 @@ namespace OpenClaw.Unity
             await Connect();
         }
         
+        /// <summary>
+        /// Quick reconnect - for Play mode transitions.
+        /// Attempts to reconnect immediately without delay.
+        /// </summary>
+        public async void QuickReconnect()
+        {
+            if (State == ConnectionState.Connected) return;
+            
+            if (_config == null)
+            {
+                _config = OpenClawConfig.Instance;
+            }
+            
+            if (_config == null) return;
+            
+            Debug.Log("[OpenClaw] Quick reconnecting...");
+            await Connect();
+        }
+        
         private async Task Connect()
         {
             SetState(ConnectionState.Connecting);

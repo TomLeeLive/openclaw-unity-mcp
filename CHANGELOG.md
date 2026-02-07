@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-02-07
+
+### Improved
+- **Play Mode Transition Handling**: Connection now properly survives Editor ↔ Play mode transitions
+  - Uses `SessionState` to persist connection state across domain reloads
+  - Listens to `AssemblyReloadEvents.beforeAssemblyReload` to save state
+  - Auto-reconnects immediately after entering/exiting Play mode
+  - Handles all four `PlayModeStateChange` events (ExitingEditMode, EnteredPlayMode, ExitingPlayMode, EnteredEditMode)
+
+### Added
+- `QuickReconnect()` method for fast reconnection during transitions
+
 ## [1.1.0] - 2026-02-07
 
 ### Added
