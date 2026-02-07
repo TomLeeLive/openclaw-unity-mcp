@@ -198,6 +198,15 @@ namespace OpenClaw.Unity
                         ProcessCommand(response);
                     }
                 }
+                else if (request.responseCode == 404)
+                {
+                    // Session expired or gateway restarted - reconnect
+                    Debug.LogWarning("[OpenClaw] Session expired, reconnecting...");
+                    Disconnect();
+                    yield return new WaitForSeconds(1f);
+                    Connect();
+                    yield break;
+                }
                 else if (request.responseCode != 408) // Ignore timeout
                 {
                     Debug.LogWarning($"[OpenClaw] Poll failed: {request.error}");

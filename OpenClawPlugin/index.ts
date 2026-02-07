@@ -34,7 +34,7 @@ function generateId(): string {
 // Clean up stale sessions (no heartbeat for 60 seconds)
 function cleanupStaleSessions() {
   const now = Date.now();
-  const staleThreshold = 60000;
+  const staleThreshold = 120000; // 2 minutes
   
   for (const [id, session] of sessions) {
     if (now - session.lastHeartbeat > staleThreshold) {
