@@ -765,30 +765,84 @@ namespace OpenClaw.Unity
             
             try
             {
-                // Use CaptureScreenshotAsTexture for immediate capture (requires Play mode)
-                if (!Application.isPlaying)
+                // In Play mode, use CaptureScreenshotAsTexture for immediate capture
+                if (Application.isPlaying)
                 {
-                    return new { success = false, error = "Screenshot requires Play mode. Please enter Play mode first." };
-                }
-                
-                var texture = ScreenCapture.CaptureScreenshotAsTexture();
-                if (texture != null)
-                {
-                    var bytes = texture.EncodeToPNG();
-                    System.IO.File.WriteAllBytes(path, bytes);
-                    UnityEngine.Object.Destroy(texture);
-                    return new { success = true, path = path };
-                }
-                else
-                {
+                    var texture = ScreenCapture.CaptureScreenshotAsTexture();
+                    if (texture != null)
+                    {
+                        var bytes = texture.EncodeToPNG();
+                        System.IO.File.WriteAllBytes(path, bytes);
+                        UnityEngine.Object.Destroy(texture);
+                        return new { success = true, path = path, mode = "play" };
+                    }
                     return new { success = false, error = "Failed to capture screenshot texture" };
                 }
+                
+                #if UNITY_EDITOR
+                // In Editor mode (not playing), capture Game View via reflection
+                return CaptureEditorGameView(path);
+                #else
+                return new { success = false, error = "Screenshot requires Play mode" };
+                #endif
             }
             catch (System.Exception e)
             {
                 return new { success = false, error = e.Message };
             }
         }
+        
+        #if UNITY_EDITOR
+        private object CaptureEditorGameView(string path)
+        {
+            try
+            {
+                var assembly = typeof(UnityEditor.EditorWindow).Assembly;
+                var gameViewType = assembly.GetType("UnityEditor.GameView");
+                if (gameViewType == null)
+                    return new { success = false, error = "GameView type not found" };
+                
+                var gameView = UnityEditor.EditorWindow.GetWindow(gameViewType, false, null, false);
+                if (gameView == null)
+                    return new { success = false, error = "GameView window not found" };
+                
+                // Try to get the render texture
+                var rtField = gameViewType.GetField("m_RenderTexture", 
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+                
+                if (rtField == null)
+                {
+                    // Fallback: Try m_TargetTexture for newer Unity versions
+                    rtField = gameViewType.GetField("m_TargetTexture", 
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                }
+                
+                if (rtField == null)
+                    return new { success = false, error = "Could not find GameView render texture field" };
+                
+                var rt = rtField.GetValue(gameView) as RenderTexture;
+                if (rt == null)
+                    return new { success = false, error = "GameView render texture is null. Try entering Play mode." };
+                
+                var texture = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+                var prevRT = RenderTexture.active;
+                RenderTexture.active = rt;
+                texture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                texture.Apply();
+                RenderTexture.active = prevRT;
+                
+                var bytes = texture.EncodeToPNG();
+                System.IO.File.WriteAllBytes(path, bytes);
+                UnityEngine.Object.DestroyImmediate(texture);
+                
+                return new { success = true, path = path, mode = "editor" };
+            }
+            catch (System.Exception e)
+            {
+                return new { success = false, error = $"Editor capture failed: {e.Message}" };
+            }
+        }
+        #endif
         
         private object DebugHierarchy(Dictionary<string, object> p)
         {
