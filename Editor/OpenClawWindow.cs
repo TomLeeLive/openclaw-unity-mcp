@@ -101,13 +101,23 @@ namespace OpenClaw.Unity.Editor
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             
-            var bridge = OpenClawBridge.Instance;
-            var isConnected = bridge != null && bridge.IsConnected;
+            // Use the unified connection manager via EditorBridge
+            var connManager = OpenClawConnectionManager.Instance;
+            var state = connManager?.State ?? OpenClawConnectionManager.ConnectionState.Disconnected;
+            var isConnected = state == OpenClawConnectionManager.ConnectionState.Connected;
+            var sessionId = connManager?.SessionId;
             
+            // Status indicator
             EditorGUILayout.BeginHorizontal();
             
-            var statusColor = isConnected ? Color.green : Color.gray;
-            var statusText = bridge == null ? "Not Running" : bridge.State.ToString();
+            var (statusColor, statusText) = state switch
+            {
+                OpenClawConnectionManager.ConnectionState.Connected => (Color.green, "Connected"),
+                OpenClawConnectionManager.ConnectionState.Connecting => (Color.yellow, "Connecting..."),
+                OpenClawConnectionManager.ConnectionState.Reconnecting => (Color.yellow, "Reconnecting..."),
+                OpenClawConnectionManager.ConnectionState.Error => (Color.red, "Error"),
+                _ => (Color.gray, "Disconnected")
+            };
             
             var oldColor = GUI.color;
             GUI.color = statusColor;
@@ -116,33 +126,47 @@ namespace OpenClaw.Unity.Editor
             
             EditorGUILayout.LabelField($"Status: {statusText}");
             
+            // Mode indicator
+            var modeText = Application.isPlaying ? "(Play)" : "(Editor)";
+            EditorGUILayout.LabelField(modeText, EditorStyles.miniLabel, GUILayout.Width(60));
+            
             EditorGUILayout.EndHorizontal();
             
-            if (!string.IsNullOrEmpty(bridge?.LastError))
+            // Session ID
+            if (!string.IsNullOrEmpty(sessionId))
             {
-                EditorGUILayout.HelpBox(bridge.LastError, MessageType.Error);
+                EditorGUILayout.LabelField($"Session: {sessionId}", EditorStyles.miniLabel);
             }
             
+            // Error message
+            if (!string.IsNullOrEmpty(connManager?.LastError) && state == OpenClawConnectionManager.ConnectionState.Error)
+            {
+                EditorGUILayout.HelpBox(connManager.LastError, MessageType.Error);
+            }
+            
+            EditorGUILayout.Space(5);
+            
+            // Buttons
             EditorGUILayout.BeginHorizontal();
             
-            if (GUILayout.Button(isConnected ? "Disconnect" : "Connect"))
+            GUI.enabled = state != OpenClawConnectionManager.ConnectionState.Connecting;
+            
+            if (isConnected)
             {
-                if (bridge != null)
+                if (GUILayout.Button("Disconnect"))
                 {
-                    if (isConnected)
-                        bridge.Disconnect();
-                    else
-                        bridge.Connect();
-                }
-                else if (Application.isPlaying)
-                {
-                    Debug.LogWarning("[OpenClaw] Bridge not found. Add OpenClawBridge to your scene.");
-                }
-                else
-                {
-                    Debug.Log("[OpenClaw] Enter Play Mode to connect.");
+                    OpenClawEditorBridge.Disconnect();
                 }
             }
+            else
+            {
+                if (GUILayout.Button("Connect"))
+                {
+                    OpenClawEditorBridge.Connect();
+                }
+            }
+            
+            GUI.enabled = true;
             
             if (GUILayout.Button("Test Connection"))
             {
