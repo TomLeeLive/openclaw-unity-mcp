@@ -1,16 +1,16 @@
 {
-  "name": "com.openclaw.unity-bridge",
+  "name": "com.tomleelive.openclaw-unity-bridge",
   "displayName": "OpenClaw Unity Bridge",
   "version": "1.0.0",
   "unity": "2021.3",
   "description": "Connect Unity to OpenClaw AI assistant via HTTP. Execute code, inspect GameObjects, manage scenes, and debug with natural language.",
   "author": {
-    "name": "OpenClaw",
-    "url": "https://github.com/openclaw"
+    "name": "TomLeeLive",
+    "url": "https://github.com/TomLeeLive"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/unity-bridge.git"
+    "url": "https://github.com/TomLeeLive/openclaw-unity-bridge.git"
   },
   "keywords": [
     "AI",

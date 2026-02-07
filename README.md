@@ -23,7 +23,7 @@ Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant. 
 2. Click `+` → `Add package from git URL...`
 3. Enter:
    ```
-   https://github.com/openclaw/unity-bridge.git
+   https://github.com/TomLeeLive/openclaw-unity-bridge.git
    ```
 
 ### Option 2: Local Package
