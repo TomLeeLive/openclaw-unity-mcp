@@ -588,6 +588,17 @@ namespace OpenClaw.Unity
                     .Replace("\t", "\\t");
         }
         
+        private string UnescapeString(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            
+            return s.Replace("\\\"", "\"")
+                    .Replace("\\n", "\n")
+                    .Replace("\\r", "\r")
+                    .Replace("\\t", "\t")
+                    .Replace("\\\\", "\\");
+        }
+        
         private Dictionary<string, object> ParseJson(string json)
         {
             var result = new Dictionary<string, object>();
@@ -608,7 +619,7 @@ namespace OpenClaw.Unity
                     var value = part.Substring(colonIndex + 1).Trim();
                     
                     if (value.StartsWith("\"") && value.EndsWith("\""))
-                        result[key] = value.Substring(1, value.Length - 2);
+                        result[key] = UnescapeString(value.Substring(1, value.Length - 2));
                     else if (value == "true")
                         result[key] = true;
                     else if (value == "false")
