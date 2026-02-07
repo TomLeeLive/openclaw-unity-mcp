@@ -56,7 +56,7 @@ namespace OpenClaw.Unity
             if (_isCapturing) return;
             Application.logMessageReceived += OnLogReceived;
             _isCapturing = true;
-            Debug.Log("[OpenClaw] Log capture started");
+            // Note: Avoid Debug.Log here during startup to prevent UPM pipe issues
         }
         
         public void StopCapture()
