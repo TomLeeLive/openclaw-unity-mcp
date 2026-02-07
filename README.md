@@ -34,19 +34,40 @@ Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant. 
 
 ## Quick Start
 
+### 1. Enable Unity Plugin in OpenClaw
+
+The Unity plugin is bundled with OpenClaw. Verify it's loaded:
+
+```bash
+openclaw plugins list | grep unity
+# Should show: Unity Bridge │ unity │ loaded
+
+openclaw unity status
+# Shows connection status
+```
+
+### 2. Add Bridge to Unity Scene
+
 1. **Add Bridge to Scene**
    - `GameObject > OpenClaw > Add Bridge to Scene`
    - Or use `Window > OpenClaw Bridge > Quick Setup`
 
 2. **Configure Gateway URL**
    - Open `Window > OpenClaw Bridge`
-   - Enter your OpenClaw gateway URL (default: `http://localhost:3000`)
+   - Gateway URL: `http://localhost:18789` (default OpenClaw port)
+   - Gateway Token: Your token from `~/.openclaw/openclaw.json` → `gateway.auth.token`
 
 3. **Enter Play Mode**
    - The bridge will auto-connect to OpenClaw
    - Status overlay shows connection state
 
-4. **Chat with OpenClaw**
+4. **Verify Connection**
+   ```bash
+   openclaw unity status
+   # Should show your Unity project as connected
+   ```
+
+5. **Chat with OpenClaw**
    - Ask OpenClaw to inspect your scene, create objects, or debug issues!
 
 ## Available Tools
@@ -112,7 +133,7 @@ Create a config asset via `Assets > Create > OpenClaw > Config` and place in `Re
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| `gatewayUrl` | OpenClaw gateway URL | `http://localhost:3000` |
+| `gatewayUrl` | OpenClaw gateway URL | `http://localhost:18789` |
 | `apiToken` | Optional API token | (empty) |
 | `autoConnect` | Connect on start | `true` |
 | `showStatusOverlay` | Show status in Game view | `true` |
@@ -120,6 +141,19 @@ Create a config asset via `Assets > Create > OpenClaw > Config` and place in `Re
 | `allowCodeExecution` | Allow code execution | `true` |
 | `allowFileAccess` | Allow file operations | `true` |
 | `allowSceneModification` | Allow scene changes | `true` |
+
+## HTTP Endpoints
+
+The OpenClaw Unity plugin registers these endpoints on the Gateway:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/unity/register` | POST | Register Unity session |
+| `/unity/heartbeat` | POST | Keep session alive |
+| `/unity/poll` | GET | Poll for commands |
+| `/unity/result` | POST | Send tool execution results |
+| `/unity/message` | POST | Send messages to AI |
+| `/unity/status` | GET | Get bridge status |
 
 ## Example Usage
 
@@ -165,6 +199,23 @@ The PlayerController has:
 The moveSpeed of 15 seems high. Would you like me to reduce it?
 ```
 
+## Troubleshooting
+
+### Bridge won't connect
+1. Verify Gateway is running: `openclaw gateway status`
+2. Check Gateway URL matches (default: `http://localhost:18789`)
+3. Ensure Unity plugin is loaded: `openclaw plugins list | grep unity`
+
+### No response from tools
+1. Confirm Unity is in Play Mode
+2. Check console for connection errors
+3. Enable Debug Mode on OpenClawBridge component
+
+### Connection drops frequently
+1. Increase heartbeat interval in config
+2. Check network stability
+3. Review Gateway logs: `openclaw gateway logs`
+
 ## Security Notes
 
 ⚠️ **This tool is designed for development use only.**
@@ -173,22 +224,10 @@ The moveSpeed of 15 seems high. Would you like me to reduce it?
 - Use API tokens when exposing gateway to network
 - The bridge runs in Play Mode only by default
 
-## OpenClaw Gateway Integration
-
-This package expects an OpenClaw gateway with Unity API endpoints:
-
-- `POST /api/unity/register` - Register Unity instance
-- `GET /api/unity/poll` - Long-poll for commands
-- `POST /api/unity/result` - Send tool execution results
-- `POST /api/unity/heartbeat` - Keep-alive
-- `POST /api/unity/message` - Send messages
-
-See [OpenClaw documentation](https://docs.openclaw.ai) for gateway setup.
-
 ## Requirements
 
-- Unity 2021.3 or later
-- OpenClaw gateway instance
+- Unity 2021.3 or later (Unity 6 recommended)
+- OpenClaw Gateway with Unity plugin enabled
 
 ## License
 

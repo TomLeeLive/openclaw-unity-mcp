@@ -123,7 +123,7 @@ namespace OpenClaw.Unity
                 { "tools", _tools.GetToolList() }
             };
             
-            var request = CreatePostRequest("api/unity/register", registerData);
+            var request = CreatePostRequest("unity/register", registerData);
             yield return request.SendWebRequest();
             
             if (request.result != UnityWebRequest.Result.Success)
@@ -172,7 +172,7 @@ namespace OpenClaw.Unity
                     { "fps", 1f / Time.deltaTime }
                 };
                 
-                var request = CreatePostRequest("api/unity/heartbeat", data);
+                var request = CreatePostRequest("unity/heartbeat", data);
                 yield return request.SendWebRequest();
                 
                 if (request.result != UnityWebRequest.Result.Success)
@@ -186,7 +186,7 @@ namespace OpenClaw.Unity
         {
             while (State == ConnectionState.Connected)
             {
-                var request = CreateGetRequest($"api/unity/poll?sessionId={_sessionId}");
+                var request = CreateGetRequest($"unity/poll?sessionId={_sessionId}");
                 request.timeout = 30; // Long polling
                 yield return request.SendWebRequest();
                 
@@ -252,7 +252,7 @@ namespace OpenClaw.Unity
                 { "error", error }
             };
             
-            var request = CreatePostRequest("api/unity/result", responseData);
+            var request = CreatePostRequest("unity/result", responseData);
             yield return request.SendWebRequest();
             
             if (request.result != UnityWebRequest.Result.Success)
@@ -276,7 +276,7 @@ namespace OpenClaw.Unity
                 { "message", message }
             };
             
-            var request = CreatePostRequest("api/unity/message", data);
+            var request = CreatePostRequest("unity/message", data);
             yield return request.SendWebRequest();
             
             if (request.result != UnityWebRequest.Result.Success)

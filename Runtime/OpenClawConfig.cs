@@ -16,8 +16,8 @@ namespace OpenClaw.Unity
     public class OpenClawConfig : ScriptableObject
     {
         [Header("Connection")]
-        [Tooltip("OpenClaw Gateway URL (e.g., http://localhost:3000)")]
-        public string gatewayUrl = "http://localhost:3000";
+        [Tooltip("OpenClaw Gateway URL (e.g., http://localhost:18789)")]
+        public string gatewayUrl = "http://localhost:18789";
         
         [Tooltip("API Token for authentication (optional, depends on gateway config)")]
         public string apiToken = "";
