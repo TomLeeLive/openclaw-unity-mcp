@@ -14,6 +14,8 @@ Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant v
 - 🎬 **Scene Management** - List, load, and inspect scenes
 - 🔧 **Component Editing** - Add, remove, and modify component properties
 - 📸 **Debug Tools** - Screenshots, hierarchy view, and more
+- 🎯 **Input Simulation** - Keyboard, mouse, and UI interaction for game testing
+- 🔄 **Editor Control** - Trigger recompilation and asset refresh remotely
 - 🔒 **Security Controls** - Configure what operations are allowed
 
 ## Requirements
@@ -63,77 +65,12 @@ openclaw unity status
 
 Ask OpenClaw to inspect your scene, create objects, or debug issues - all without entering Play mode!
 
-## Architecture
+## 📚 Documentation
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Unity Editor                             │
-│                                                              │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │           OpenClawEditorBridge                          │ │
-│  │           [InitializeOnLoad]                            │ │
-│  │                                                          │ │
-│  │  • EditorApplication.delayCall → safe init              │ │
-│  │  • EditorApplication.update → connection polling        │ │
-│  │  • Maintains connection in Edit Mode                    │ │
-│  └──────────────────────┬─────────────────────────────────┘ │
-│                         │                                    │
-│                         ▼                                    │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │         OpenClawConnectionManager                       │ │
-│  │         (Singleton - shared across modes)               │ │
-│  │                                                          │ │
-│  │  • HTTP polling for commands                            │ │
-│  │  • Main thread execution queue                          │ │
-│  │  • Automatic reconnection                               │ │
-│  │  • Session management & heartbeat                       │ │
-│  └──────────────────────┬─────────────────────────────────┘ │
-│                         │                                    │
-│                         ▼                                    │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │           OpenClawBridge                                │ │
-│  │           (MonoBehaviour - Play Mode)                   │ │
-│  │                                                          │ │
-│  │  • Additional Update() for gameplay responsiveness      │ │
-│  │  • Game-specific event hooks                            │ │
-│  │  • Status overlay in Game view                          │ │
-│  └────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────┘
-                              │
-                              │ HTTP
-                              ▼
-┌──────────────────────────────────────────────────────────────┐
-│                   OpenClaw Gateway                            │
-│                   http://localhost:18789                      │
-│                                                               │
-│  Endpoints:                                                   │
-│  • POST /unity/register  - Register Unity session             │
-│  • POST /unity/heartbeat - Keep session alive                 │
-│  • GET  /unity/poll      - Poll for commands (long-polling)   │
-│  • POST /unity/result    - Send tool execution results        │
-└──────────────────────────────────────────────────────────────┘
-```
+- **[Development Guide](docs/DEVELOPMENT.md)** - Architecture, extending tools, and contribution guidelines
+- **[Testing Guide](docs/TESTING.md)** - Complete testing guide with examples
 
-### Key Components
-
-| Component | Description |
-|-----------|-------------|
-| `OpenClawEditorBridge` | Editor-time initializer using `[InitializeOnLoad]` |
-| `OpenClawConnectionManager` | Unified singleton handling all HTTP communication |
-| `OpenClawBridge` | MonoBehaviour for Play mode responsiveness |
-| `OpenClawTools` | 30+ Unity tools exposed to AI |
-| `OpenClawWindow` | Editor window for configuration & status |
-
-### Connection Flow
-
-1. **Unity Starts** → `[InitializeOnLoad]` triggers
-2. **Delayed Init** → Wait 2 seconds for editor stability
-3. **Auto-Connect** → Connect to OpenClaw Gateway
-4. **Polling Loop** → `EditorApplication.update` polls for commands
-5. **Mode Change** → Connection maintained across Edit/Play transitions
-6. **Reconnect** → Automatic recovery on connection loss
-
-## Available Tools
+## Available Tools (42 total)
 
 ### Console
 | Tool | Description |
@@ -175,6 +112,13 @@ Ask OpenClaw to inspect your scene, create objects, or debug issues - all withou
 | `component.set` | Set field/property value |
 | `component.list` | List available types |
 
+### Script
+| Tool | Description |
+|------|-------------|
+| `script.execute` | Execute simple commands |
+| `script.read` | Read script file contents |
+| `script.list` | List script files in project |
+
 ### Application
 | Tool | Description |
 |------|-------------|
@@ -187,8 +131,79 @@ Ask OpenClaw to inspect your scene, create objects, or debug issues - all withou
 | Tool | Description |
 |------|-------------|
 | `debug.log` | Write to console |
-| `debug.screenshot` | Capture screenshot |
+| `debug.screenshot` | Capture screenshot (with UI) |
 | `debug.hierarchy` | Text hierarchy view |
+
+### Editor (NEW in v1.2.0)
+| Tool | Description |
+|------|-------------|
+| `editor.refresh` | Refresh AssetDatabase (triggers recompile) |
+| `editor.recompile` | Request script recompilation |
+
+### Input Simulation (NEW in v1.2.0)
+| Tool | Description |
+|------|-------------|
+| `input.keyPress` | Press and release a key |
+| `input.keyDown` | Press and hold a key |
+| `input.keyUp` | Release a key |
+| `input.type` | Type text into input field |
+| `input.mouseMove` | Move mouse cursor |
+| `input.mouseClick` | Click at position |
+| `input.mouseDrag` | Drag from A to B |
+| `input.mouseScroll` | Scroll wheel |
+| `input.getMousePosition` | Get current cursor position |
+| `input.clickUI` | Click UI element by name |
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Unity Editor                             │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │           OpenClawEditorBridge                          │ │
+│  │           [InitializeOnLoad]                            │ │
+│  │                                                          │ │
+│  │  • EditorApplication.delayCall → safe init              │ │
+│  │  • EditorApplication.update → connection polling        │ │
+│  │  • SessionState → survives Play mode transitions        │ │
+│  └──────────────────────┬─────────────────────────────────┘ │
+│                         │                                    │
+│                         ▼                                    │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         OpenClawConnectionManager                       │ │
+│  │         (Singleton - shared across modes)               │ │
+│  │                                                          │ │
+│  │  • HTTP polling for commands                            │ │
+│  │  • Main thread execution queue                          │ │
+│  │  • Automatic reconnection                               │ │
+│  │  • JSON parsing with nested object support              │ │
+│  └──────────────────────┬─────────────────────────────────┘ │
+│                         │                                    │
+│                         ▼                                    │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │           OpenClawTools (42 tools)                      │ │
+│  │                                                          │ │
+│  │  • Scene/GameObject/Component manipulation              │ │
+│  │  • Debug tools (screenshot, hierarchy)                  │ │
+│  │  • Input simulation (keyboard, mouse, UI)               │ │
+│  │  • Editor control (recompile, refresh)                  │ │
+│  └────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
+                              │
+                              │ HTTP
+                              ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   OpenClaw Gateway                            │
+│                   http://localhost:18789                      │
+│                                                               │
+│  Endpoints:                                                   │
+│  • POST /unity/register  - Register Unity session             │
+│  • POST /unity/heartbeat - Keep session alive                 │
+│  • GET  /unity/poll      - Poll for commands                  │
+│  • POST /unity/result    - Send tool execution results        │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ## Configuration
 
@@ -207,6 +222,7 @@ Create via `Assets > Create > OpenClaw > Config` and place in `Resources` folder
 
 ## Example Usage
 
+### Scene Inspection
 ```
 You: What GameObjects are in my scene?
 
@@ -217,16 +233,31 @@ Your scene has:
 ▶ Directional Light [Light]
 ▶ Player [PlayerController, Rigidbody]
   ▶ Model [MeshRenderer]
-▶ Environment
-  ▶ Ground [MeshCollider]
+▶ UI Canvas [Canvas, GraphicRaycaster]
+  ▶ PlayButton [Button]
 ```
 
+### Game Testing with Input Simulation
 ```
-You: Create 5 spheres in a circle
+You: Test the login flow - enter username "TestPlayer" and click Play
 
-OpenClaw: [Executes gameobject.create 5 times]
+OpenClaw: 
+[Executes input.clickUI {name: "UsernameInput"}]
+[Executes input.type {text: "TestPlayer"}]
+[Executes input.clickUI {name: "PlayButton"}]
+[Executes debug.screenshot]
 
-Done! Created 5 spheres at radius 3 from origin.
+Done! Clicked username input, typed "TestPlayer", and clicked Play button.
+Screenshot attached showing the result.
+```
+
+### Remote Recompilation
+```
+You: I updated the PlayerController script, recompile Unity
+
+OpenClaw: [Executes editor.recompile]
+
+Script recompilation requested. Unity will reload shortly.
 ```
 
 ## Troubleshooting
@@ -236,18 +267,25 @@ Done! Created 5 spheres at radius 3 from origin.
 2. Verify URL: default is `http://localhost:18789`
 3. Check `Window > OpenClaw Bridge` for errors
 
-### Connection shows "Reconnecting"
-- Gateway may have restarted - auto-recovers
-- Click "Force Reconnect" in Advanced section
+### Connection lost during Play mode transition
+- Plugin uses `SessionState` to survive domain reloads
+- Auto-reconnects after Play mode transition
+- If stuck, use `editor.refresh` or click "Force Reconnect"
 
-### Tools work but parameters ignored
-- Known issue with parameter parsing
-- Will be fixed in future update
+### Screenshot shows wrong content
+- In Play mode: Uses `ScreenCapture` (includes UI)
+- In Editor mode: Uses `Camera.main.Render()` (no overlay UI)
+- Use Play mode for accurate game screenshots
 
 ## ⚠️ Important Notes
 
 - **Development Only**: Disable `allowCodeExecution` in production builds
-- **Unity 6**: Some versions may have UPM stability issues
+- **TextMeshPro**: Plugin works with or without TMPro (uses reflection)
+- **Unity 6**: Deferred initialization prevents UPM EPIPE crashes
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## License
 
