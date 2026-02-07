@@ -333,7 +333,7 @@ const plugin = {
         logger.info(`[Unity] Queued command: ${tool} (request: ${requestId})`);
         
         // Wait for result (with timeout)
-        const timeout = 30000;
+        const timeout = 60000; // 60 seconds
         const startTime = Date.now();
         
         while (Date.now() - startTime < timeout) {
