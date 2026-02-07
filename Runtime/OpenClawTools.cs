@@ -78,6 +78,8 @@ namespace OpenClaw.Unity
                 // Editor (Unity Editor control)
                 { "editor.refresh", EditorRefresh },
                 { "editor.recompile", EditorRecompile },
+                { "editor.focusWindow", EditorFocusWindow },
+                { "editor.listWindows", EditorListWindows },
                 
                 // Input (for game testing)
                 { "input.keyPress", InputKeyPress },
@@ -919,6 +921,110 @@ namespace OpenClaw.Unity
             #endif
         }
         
+        private object EditorFocusWindow(Dictionary<string, object> p)
+        {
+            #if UNITY_EDITOR
+            var windowName = GetString(p, "window", "Game");
+            
+            try
+            {
+                Type windowType = null;
+                string actualName = windowName.ToLower();
+                
+                // Map common window names to types
+                var windowTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    { "game", "UnityEditor.GameView" },
+                    { "gameview", "UnityEditor.GameView" },
+                    { "scene", "UnityEditor.SceneView" },
+                    { "sceneview", "UnityEditor.SceneView" },
+                    { "console", "UnityEditor.ConsoleWindow" },
+                    { "hierarchy", "UnityEditor.SceneHierarchyWindow" },
+                    { "project", "UnityEditor.ProjectBrowser" },
+                    { "inspector", "UnityEditor.InspectorWindow" },
+                    { "animation", "UnityEditor.AnimationWindow" },
+                    { "animator", "UnityEditor.Graphs.AnimatorControllerTool" },
+                    { "profiler", "UnityEditor.ProfilerWindow" },
+                    { "audio", "UnityEditor.AudioMixerWindow" },
+                    { "asset", "UnityEditor.AssetStoreWindow" },
+                    { "package", "UnityEditor.PackageManager.UI.PackageManagerWindow" },
+                };
+                
+                string typeName = null;
+                if (windowTypes.TryGetValue(windowName, out typeName))
+                {
+                    // Find the type in UnityEditor assembly
+                    var assembly = typeof(UnityEditor.EditorWindow).Assembly;
+                    windowType = assembly.GetType(typeName);
+                    
+                    // Try alternative assemblies for some windows
+                    if (windowType == null)
+                    {
+                        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                        {
+                            windowType = asm.GetType(typeName);
+                            if (windowType != null) break;
+                        }
+                    }
+                }
+                
+                if (windowType == null)
+                {
+                    return new { 
+                        success = false, 
+                        error = $"Window '{windowName}' not found",
+                        availableWindows = new[] { "game", "scene", "console", "hierarchy", "project", "inspector", "profiler" }
+                    };
+                }
+                
+                // Focus the window
+                var window = UnityEditor.EditorWindow.GetWindow(windowType, false, null, true);
+                if (window != null)
+                {
+                    window.Focus();
+                    return new { success = true, window = windowName, focused = true };
+                }
+                
+                return new { success = false, error = $"Failed to focus window '{windowName}'" };
+            }
+            catch (System.Exception e)
+            {
+                return new { success = false, error = e.Message };
+            }
+            #else
+            return new { success = false, error = "Only available in Editor" };
+            #endif
+        }
+        
+        private object EditorListWindows(Dictionary<string, object> p)
+        {
+            #if UNITY_EDITOR
+            try
+            {
+                var windows = new List<Dictionary<string, object>>();
+                
+                foreach (var window in UnityEditor.Resources.FindObjectsOfTypeAll<UnityEditor.EditorWindow>())
+                {
+                    windows.Add(new Dictionary<string, object>
+                    {
+                        { "title", window.titleContent.text },
+                        { "type", window.GetType().Name },
+                        { "focused", window.hasFocus },
+                        { "position", $"{window.position.x},{window.position.y},{window.position.width},{window.position.height}" }
+                    });
+                }
+                
+                return new { success = true, windows = windows, count = windows.Count };
+            }
+            catch (System.Exception e)
+            {
+                return new { success = false, error = e.Message };
+            }
+            #else
+            return new { success = false, error = "Only available in Editor" };
+            #endif
+        }
+        
         #endregion
         
         #region Input Tools
@@ -1416,6 +1522,8 @@ namespace OpenClaw.Unity
                 "debug.hierarchy" => "Get text hierarchy view",
                 "editor.refresh" => "Refresh AssetDatabase and recompile if needed (params: forceUpdate)",
                 "editor.recompile" => "Request script recompilation",
+                "editor.focusWindow" => "Focus an Editor window (params: window - game/scene/console/hierarchy/project/inspector)",
+                "editor.listWindows" => "List all open Editor windows",
                 "input.keyPress" => "Press and release a key (params: key, duration)",
                 "input.keyDown" => "Press and hold a key (params: key)",
                 "input.keyUp" => "Release a key (params: key)",
