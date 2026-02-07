@@ -11,6 +11,12 @@ All notable changes to this project will be documented in this file.
   - Auto-reconnects immediately after entering/exiting Play mode
   - Handles all four `PlayModeStateChange` events (ExitingEditMode, EnteredPlayMode, ExitingPlayMode, EnteredEditMode)
 
+### Fixed
+- **Screenshot Tool**: Now captures immediately instead of async
+  - Play mode: Uses `CaptureScreenshotAsTexture()` for synchronous capture
+  - Editor mode: Captures GameView via reflection (`m_RenderTexture`)
+  - File exists when path is returned
+
 ### Added
 - `QuickReconnect()` method for fast reconnection during transitions
 
