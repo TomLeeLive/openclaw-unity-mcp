@@ -1,6 +1,6 @@
 /*
- * OpenClaw Unity Bridge
- * https://github.com/openclaw/unity-bridge
+ * OpenClaw Unity MCP
+ * https://github.com/TomLeeLive/openclaw-unity-mcp
  * MIT License
  */
 
@@ -88,7 +88,7 @@ namespace OpenClaw.Unity.Editor
                 alignment = TextAnchor.MiddleCenter
             };
             
-            EditorGUILayout.LabelField("🐾 OpenClaw Unity Bridge", headerStyle, GUILayout.Height(30));
+            EditorGUILayout.LabelField("🐾 OpenClaw Unity MCP", headerStyle, GUILayout.Height(30));
             
             GUILayout.FlexibleSpace();
             

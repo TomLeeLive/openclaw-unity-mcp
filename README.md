@@ -1,10 +1,20 @@
-# 🐾 OpenClaw Unity Bridge
+# 🐾 OpenClaw Unity MCP
 
-Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant. Execute code, inspect GameObjects, manage scenes, and debug with natural language.
+Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant via MCP (Model Context Protocol). Works in **Editor mode** without hitting Play!
 
 [![Unity](https://img.shields.io/badge/Unity-2021.3+-black?logo=unity)](https://unity.com)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.2.3+-green)](https://github.com/openclaw/openclaw)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+## ✨ Key Features
+
+- 🎮 **Works in Editor & Play Mode** - No need to hit Play to use AI tools
+- 🔌 **Auto-Connect** - Connects when Unity starts, maintains connection across mode changes
+- 📋 **Console Integration** - Capture and query Unity logs for debugging
+- 🎬 **Scene Management** - List, load, and inspect scenes
+- 🔧 **Component Editing** - Add, remove, and modify component properties
+- 📸 **Debug Tools** - Screenshots, hierarchy view, and more
+- 🔒 **Security Controls** - Configure what operations are allowed
 
 ## Requirements
 
@@ -12,15 +22,6 @@ Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant. 
 |-----------|---------|
 | **Unity** | 2021.3+ |
 | **OpenClaw** | 2026.2.3+ |
-
-## Features
-
-- 🎮 **Full Unity Control** - Create, modify, and inspect GameObjects and Components
-- 📋 **Console Integration** - Capture and query Unity logs for debugging
-- 🎬 **Scene Management** - List, load, and inspect scenes
-- 🔧 **Component Editing** - Add, remove, and modify component properties
-- 📸 **Debug Tools** - Screenshots, hierarchy view, and more
-- 🔒 **Security Controls** - Configure what operations are allowed
 
 ## Installation
 
@@ -30,7 +31,7 @@ Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant. 
 2. Click `+` → `Add package from git URL...`
 3. Enter:
    ```
-   https://github.com/TomLeeLive/openclaw-unity-bridge.git
+   https://github.com/TomLeeLive/openclaw-unity-mcp.git
    ```
 
 ### Option 2: Local Package
@@ -43,39 +44,94 @@ Connect Unity to [OpenClaw](https://github.com/openclaw/openclaw) AI assistant. 
 
 ### 1. Enable Unity Plugin in OpenClaw
 
-The Unity plugin is bundled with OpenClaw. Verify it's loaded:
-
 ```bash
 openclaw plugins list | grep unity
-# Should show: Unity Bridge │ unity │ loaded
+# Should show: Unity MCP │ unity │ loaded
 
 openclaw unity status
 # Shows connection status
 ```
 
-### 2. Add Bridge to Unity Scene
+### 2. Configure in Unity
 
-1. **Add Bridge to Scene**
-   - `GameObject > OpenClaw > Add Bridge to Scene`
-   - Or use `Window > OpenClaw Bridge > Quick Setup`
+1. Open `Window > OpenClaw Bridge`
+2. Set Gateway URL: `http://localhost:18789` (default)
+3. Connection is automatic when Unity starts
+4. Status shows green when connected
 
-2. **Configure Gateway URL**
-   - Open `Window > OpenClaw Bridge`
-   - Gateway URL: `http://localhost:18789` (default OpenClaw port)
-   - Gateway Token: Your token from `~/.openclaw/openclaw.json` → `gateway.auth.token`
+### 3. Chat with OpenClaw
 
-3. **Enter Play Mode**
-   - The bridge will auto-connect to OpenClaw
-   - Status overlay shows connection state
+Ask OpenClaw to inspect your scene, create objects, or debug issues - all without entering Play mode!
 
-4. **Verify Connection**
-   ```bash
-   openclaw unity status
-   # Should show your Unity project as connected
-   ```
+## Architecture
 
-5. **Chat with OpenClaw**
-   - Ask OpenClaw to inspect your scene, create objects, or debug issues!
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Unity Editor                             │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │           OpenClawEditorBridge                          │ │
+│  │           [InitializeOnLoad]                            │ │
+│  │                                                          │ │
+│  │  • EditorApplication.delayCall → safe init              │ │
+│  │  • EditorApplication.update → connection polling        │ │
+│  │  • Maintains connection in Edit Mode                    │ │
+│  └──────────────────────┬─────────────────────────────────┘ │
+│                         │                                    │
+│                         ▼                                    │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         OpenClawConnectionManager                       │ │
+│  │         (Singleton - shared across modes)               │ │
+│  │                                                          │ │
+│  │  • HTTP polling for commands                            │ │
+│  │  • Main thread execution queue                          │ │
+│  │  • Automatic reconnection                               │ │
+│  │  • Session management & heartbeat                       │ │
+│  └──────────────────────┬─────────────────────────────────┘ │
+│                         │                                    │
+│                         ▼                                    │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │           OpenClawBridge                                │ │
+│  │           (MonoBehaviour - Play Mode)                   │ │
+│  │                                                          │ │
+│  │  • Additional Update() for gameplay responsiveness      │ │
+│  │  • Game-specific event hooks                            │ │
+│  │  • Status overlay in Game view                          │ │
+│  └────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
+                              │
+                              │ HTTP
+                              ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   OpenClaw Gateway                            │
+│                   http://localhost:18789                      │
+│                                                               │
+│  Endpoints:                                                   │
+│  • POST /unity/register  - Register Unity session             │
+│  • POST /unity/heartbeat - Keep session alive                 │
+│  • GET  /unity/poll      - Poll for commands (long-polling)   │
+│  • POST /unity/result    - Send tool execution results        │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Key Components
+
+| Component | Description |
+|-----------|-------------|
+| `OpenClawEditorBridge` | Editor-time initializer using `[InitializeOnLoad]` |
+| `OpenClawConnectionManager` | Unified singleton handling all HTTP communication |
+| `OpenClawBridge` | MonoBehaviour for Play mode responsiveness |
+| `OpenClawTools` | 30+ Unity tools exposed to AI |
+| `OpenClawWindow` | Editor window for configuration & status |
+
+### Connection Flow
+
+1. **Unity Starts** → `[InitializeOnLoad]` triggers
+2. **Delayed Init** → Wait 2 seconds for editor stability
+3. **Auto-Connect** → Connect to OpenClaw Gateway
+4. **Polling Loop** → `EditorApplication.update` polls for commands
+5. **Mode Change** → Connection maintained across Edit/Play transitions
+6. **Reconnect** → Automatic recovery on connection loss
 
 ## Available Tools
 
@@ -136,7 +192,7 @@ openclaw unity status
 
 ## Configuration
 
-Create a config asset via `Assets > Create > OpenClaw > Config` and place in `Resources` folder.
+Create via `Assets > Create > OpenClaw > Config` and place in `Resources` folder.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -149,100 +205,54 @@ Create a config asset via `Assets > Create > OpenClaw > Config` and place in `Re
 | `allowFileAccess` | Allow file operations | `true` |
 | `allowSceneModification` | Allow scene changes | `true` |
 
-## HTTP Endpoints
-
-The OpenClaw Unity plugin registers these endpoints on the Gateway:
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/unity/register` | POST | Register Unity session |
-| `/unity/heartbeat` | POST | Keep session alive |
-| `/unity/poll` | GET | Poll for commands |
-| `/unity/result` | POST | Send tool execution results |
-| `/unity/message` | POST | Send messages to AI |
-| `/unity/status` | GET | Get bridge status |
-
 ## Example Usage
-
-### Chatting with OpenClaw
 
 ```
 You: What GameObjects are in my scene?
 
-OpenClaw: Let me check your scene hierarchy...
-[Executes debug.hierarchy tool]
+OpenClaw: [Executes debug.hierarchy]
 
 Your scene has:
 ▶ Main Camera [Camera, AudioListener]
 ▶ Directional Light [Light]
-▶ Player [PlayerController, Rigidbody, CapsuleCollider]
-  ▶ Model [MeshRenderer, MeshFilter]
-  ▶ WeaponMount
+▶ Player [PlayerController, Rigidbody]
+  ▶ Model [MeshRenderer]
 ▶ Environment
-  ▶ Ground [MeshRenderer, MeshCollider]
-  ▶ Obstacles...
+  ▶ Ground [MeshCollider]
 ```
 
 ```
-You: Create 5 cubes in a circle
+You: Create 5 spheres in a circle
 
-OpenClaw: I'll create 5 cubes arranged in a circle...
-[Executes gameobject.create 5 times with calculated positions]
+OpenClaw: [Executes gameobject.create 5 times]
 
-Done! Created 5 cubes at radius 3 from origin.
-```
-
-```
-You: The player is moving too fast, can you check the speed setting?
-
-OpenClaw: Let me inspect the PlayerController component...
-[Executes component.get for PlayerController]
-
-The PlayerController has:
-- moveSpeed: 15
-- jumpForce: 8
-- gravity: 20
-
-The moveSpeed of 15 seems high. Would you like me to reduce it?
+Done! Created 5 spheres at radius 3 from origin.
 ```
 
 ## Troubleshooting
 
 ### Bridge won't connect
-1. Verify Gateway is running: `openclaw gateway status`
-2. Check Gateway URL matches (default: `http://localhost:18789`)
-3. Ensure Unity plugin is loaded: `openclaw plugins list | grep unity`
+1. Check Gateway status: `openclaw gateway status`
+2. Verify URL: default is `http://localhost:18789`
+3. Check `Window > OpenClaw Bridge` for errors
 
-### No response from tools
-1. Confirm Unity is in Play Mode
-2. Check console for connection errors
-3. Enable Debug Mode on OpenClawBridge component
+### Connection shows "Reconnecting"
+- Gateway may have restarted - auto-recovers
+- Click "Force Reconnect" in Advanced section
 
-### Connection drops frequently
-1. Increase heartbeat interval in config
-2. Check network stability
-3. Review Gateway logs: `openclaw gateway logs`
+### Tools work but parameters ignored
+- Known issue with parameter parsing
+- Will be fixed in future update
 
-## Security Notes
+## ⚠️ Important Notes
 
-⚠️ **This tool is designed for development use only.**
-
-- Disable `allowCodeExecution` in production builds
-- Use API tokens when exposing gateway to network
-- The bridge runs in Play Mode only by default
-
-## Requirements
-
-- Unity 2021.3 or later (Unity 6 recommended)
-- OpenClaw Gateway with Unity plugin enabled
+- **Unity-MCP Conflict**: Cannot use with `com.ivanmurzak.unity.mcp` package - remove it first
+- **Development Only**: Disable `allowCodeExecution` in production builds
+- **Unity 6**: Some versions may have UPM stability issues
 
 ## License
 
 MIT License - See [LICENSE](LICENSE)
-
-## Contributing
-
-Contributions welcome! Please read the contributing guidelines first.
 
 ---
 

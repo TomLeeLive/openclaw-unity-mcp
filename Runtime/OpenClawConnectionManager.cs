@@ -1,7 +1,7 @@
 /*
- * OpenClaw Unity Bridge - Unified Connection Manager
+ * OpenClaw Unity MCP - Unified Connection Manager
  * Works in both Editor and Play mode
- * https://github.com/TomLeeLive/openclaw-unity-bridge
+ * https://github.com/TomLeeLive/openclaw-unity-mcp
  * MIT License
  */
 

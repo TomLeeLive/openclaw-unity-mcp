@@ -1,6 +1,6 @@
 /*
- * OpenClaw Unity Bridge
- * https://github.com/openclaw/unity-bridge
+ * OpenClaw Unity MCP
+ * https://github.com/TomLeeLive/openclaw-unity-mcp
  * MIT License
  */
 

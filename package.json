@@ -1,21 +1,22 @@
 {
-  "name": "com.tomleelive.openclaw-unity-bridge",
-  "displayName": "OpenClaw Unity Bridge",
-  "version": "1.0.0",
+  "name": "com.tomleelive.openclaw-unity-mcp",
+  "displayName": "OpenClaw Unity MCP",
+  "version": "1.1.0",
   "unity": "2021.3",
-  "description": "Connect Unity to OpenClaw AI assistant via HTTP. Execute code, inspect GameObjects, manage scenes, and debug with natural language.",
+  "description": "Connect Unity to OpenClaw AI assistant via MCP (Model Context Protocol). Works in Editor & Play mode. Execute code, inspect GameObjects, manage scenes, and debug with natural language.",
   "author": {
     "name": "TomLeeLive",
     "url": "https://github.com/TomLeeLive"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TomLeeLive/openclaw-unity-bridge.git"
+    "url": "https://github.com/TomLeeLive/openclaw-unity-mcp.git"
   },
   "keywords": [
     "AI",
     "OpenClaw",
-    "Bridge",
+    "MCP",
+    "Model Context Protocol",
     "Assistant",
     "Automation",
     "Code Generation"
@@ -25,7 +26,7 @@
   "samples": [
     {
       "displayName": "Basic Setup",
-      "description": "Basic scene with OpenClaw bridge configured",
+      "description": "Basic scene with OpenClaw MCP configured",
       "path": "Samples~/BasicSetup"
     }
   ]
