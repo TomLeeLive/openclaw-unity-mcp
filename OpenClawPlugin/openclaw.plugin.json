@@ -1,0 +1,20 @@
+{
+  "id": "unity",
+  "name": "Unity Bridge",
+  "description": "Connect Unity Editor to OpenClaw AI assistant",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true
+      }
+    }
+  },
+  "uiHints": {
+    "enabled": {
+      "label": "Enable Unity Bridge"
+    }
+  }
+}

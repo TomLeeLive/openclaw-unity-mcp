@@ -1,0 +1,10 @@
+{
+  "name": "unity",
+  "version": "1.0.0",
+  "description": "OpenClaw Unity Bridge Plugin",
+  "main": "index.ts",
+  "type": "module",
+  "openclaw": {
+    "extensions": ["./index.ts"]
+  }
+}

@@ -27,3 +27,4 @@ Thumbs.db
 
 # Unity Package Manager
 Packages/packages-lock.json
+.omc/
