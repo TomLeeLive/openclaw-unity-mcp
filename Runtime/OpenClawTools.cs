@@ -762,62 +762,69 @@ namespace OpenClaw.Unity
         {
             var filename = GetString(p, "filename", $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png");
             var path = System.IO.Path.Combine(Application.persistentDataPath, filename);
+            var method = GetString(p, "method", "auto"); // auto, camera, screencapture
             
             try
             {
-                // Method 1: Try Camera.main render (most reliable)
-                var camera = Camera.main;
-                if (camera != null)
-                {
-                    // Get resolution from parameters or use sensible defaults
-                    // Screen.width/height can be wrong in Editor
-                    int width = GetInt(p, "width", 0);
-                    int height = GetInt(p, "height", 0);
-                    
-                    if (width <= 0 || height <= 0)
-                    {
-                        // Try to get from camera's pixel rect, fallback to 1920x1080
-                        width = camera.pixelWidth > 100 ? camera.pixelWidth : 1920;
-                        height = camera.pixelHeight > 100 ? camera.pixelHeight : 1080;
-                    }
-                    
-                    var rt = new RenderTexture(width, height, 24);
-                    camera.targetTexture = rt;
-                    camera.Render();
-                    
-                    var prevRT = RenderTexture.active;
-                    RenderTexture.active = rt;
-                    
-                    var texture = new Texture2D(width, height, TextureFormat.RGB24, false);
-                    texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-                    texture.Apply();
-                    
-                    camera.targetTexture = null;
-                    RenderTexture.active = prevRT;
-                    
-                    var bytes = texture.EncodeToPNG();
-                    System.IO.File.WriteAllBytes(path, bytes);
-                    
-                    UnityEngine.Object.Destroy(rt);
-                    UnityEngine.Object.Destroy(texture);
-                    
-                    return new { success = true, path = path, mode = "camera", width = width, height = height };
-                }
-                
-                // Method 2: Fallback to ScreenCapture (may not work correctly in Editor)
-                if (Application.isPlaying)
+                // Method 1: ScreenCapture (captures UI overlays, but may fail in Editor)
+                if ((method == "auto" || method == "screencapture") && Application.isPlaying)
                 {
                     var texture = ScreenCapture.CaptureScreenshotAsTexture();
-                    if (texture != null)
+                    if (texture != null && texture.width > 100 && texture.height > 100)
                     {
                         var bytes = texture.EncodeToPNG();
                         System.IO.File.WriteAllBytes(path, bytes);
+                        int w = texture.width, h = texture.height;
                         UnityEngine.Object.Destroy(texture);
-                        return new { success = true, path = path, mode = "screencapture" };
+                        return new { success = true, path = path, mode = "screencapture", width = w, height = h };
+                    }
+                    if (texture != null) UnityEngine.Object.Destroy(texture);
+                    
+                    // If auto mode and screencapture failed, try camera
+                    if (method == "screencapture")
+                        return new { success = false, error = "ScreenCapture failed or returned invalid size" };
+                }
+                
+                // Method 2: Camera.main render (no UI overlay, but reliable)
+                if (method == "auto" || method == "camera")
+                {
+                    var camera = Camera.main;
+                    if (camera != null)
+                    {
+                        int width = GetInt(p, "width", 0);
+                        int height = GetInt(p, "height", 0);
+                        
+                        if (width <= 0 || height <= 0)
+                        {
+                            width = camera.pixelWidth > 100 ? camera.pixelWidth : 1920;
+                            height = camera.pixelHeight > 100 ? camera.pixelHeight : 1080;
+                        }
+                        
+                        var rt = new RenderTexture(width, height, 24);
+                        camera.targetTexture = rt;
+                        camera.Render();
+                        
+                        var prevRT = RenderTexture.active;
+                        RenderTexture.active = rt;
+                        
+                        var texture = new Texture2D(width, height, TextureFormat.RGB24, false);
+                        texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                        texture.Apply();
+                        
+                        camera.targetTexture = null;
+                        RenderTexture.active = prevRT;
+                        
+                        var bytes = texture.EncodeToPNG();
+                        System.IO.File.WriteAllBytes(path, bytes);
+                        
+                        UnityEngine.Object.Destroy(rt);
+                        UnityEngine.Object.Destroy(texture);
+                        
+                        return new { success = true, path = path, mode = "camera", width = width, height = height };
                     }
                 }
                 
-                return new { success = false, error = "No camera found and ScreenCapture failed" };
+                return new { success = false, error = "No capture method succeeded" };
             }
             catch (System.Exception e)
             {
