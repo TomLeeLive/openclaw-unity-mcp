@@ -70,7 +70,7 @@ Ask OpenClaw to inspect your scene, create objects, or debug issues - all withou
 - **[Development Guide](docs/DEVELOPMENT.md)** - Architecture, extending tools, and contribution guidelines
 - **[Testing Guide](docs/TESTING.md)** - Complete testing guide with examples
 
-## Available Tools (42 total)
+## Available Tools (44 total)
 
 ### Console
 | Tool | Description |
@@ -139,6 +139,8 @@ Ask OpenClaw to inspect your scene, create objects, or debug issues - all withou
 |------|-------------|
 | `editor.refresh` | Refresh AssetDatabase (triggers recompile) |
 | `editor.recompile` | Request script recompilation |
+| `editor.focusWindow` | Focus Editor window (game/scene/console/hierarchy/project/inspector) |
+| `editor.listWindows` | List all open Editor windows |
 
 ### Input Simulation (NEW in v1.2.0)
 | Tool | Description |
@@ -182,7 +184,7 @@ Ask OpenClaw to inspect your scene, create objects, or debug issues - all withou
 │                         │                                    │
 │                         ▼                                    │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │           OpenClawTools (42 tools)                      │ │
+│  │           OpenClawTools (44 tools)                      │ │
 │  │                                                          │ │
 │  │  • Scene/GameObject/Component manipulation              │ │
 │  │  • Debug tools (screenshot, hierarchy)                  │ │

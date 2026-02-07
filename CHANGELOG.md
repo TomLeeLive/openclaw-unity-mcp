@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-02-07
+
+### Added
+- `editor.focusWindow` - Focus specific Editor windows (Game, Scene, Console, etc.)
+- `editor.listWindows` - List all open Editor windows with focus state
+- Now **44 tools** total
+
+### Fixed
+- Compilation error: Changed `UnityEditor.Resources` to `Resources.FindObjectsOfTypeAll`
+
 ## [1.2.0] - 2026-02-07
 
 ### Improved

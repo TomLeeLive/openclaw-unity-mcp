@@ -55,7 +55,7 @@ openclaw-unity-plugin/
 ├── Runtime/                  # 런타임 코드 (Editor + Play)
 │   ├── OpenClaw.Unity.asmdef
 │   ├── OpenClawConnectionManager.cs   # HTTP 통신 담당
-│   ├── OpenClawTools.cs               # 42개 도구 구현
+│   ├── OpenClawTools.cs               # 44개 도구 구현
 │   ├── OpenClawBridge.cs              # MonoBehaviour (Play Mode)
 │   ├── OpenClawConfig.cs              # 설정 ScriptableObject
 │   ├── OpenClawLogger.cs              # 로그 캡처
@@ -133,7 +133,7 @@ public class OpenClawConnectionManager : IDisposable
 
 ### OpenClawTools.cs
 
-42개의 AI 도구 구현체입니다.
+44개의 AI 도구 구현체입니다.
 
 ```csharp
 public class OpenClawTools
@@ -147,7 +147,7 @@ public class OpenClawTools
             { "console.getLogs", ConsoleGetLogs },
             { "scene.list", SceneList },
             { "gameobject.find", GameObjectFind },
-            // ... 42개 도구
+            // ... 44개 도구
         };
     }
 }

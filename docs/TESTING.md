@@ -716,6 +716,64 @@ OpenClaw에게: "Unity 스크립트 재컴파일해줘"
 { "success": true, "action": "RequestScriptCompilation" }
 ```
 
+### editor.focusWindow - 창 포커스
+
+**설명:** 특정 Editor 창에 포커스를 맞춥니다.
+
+**파라미터:**
+| 파라미터 | 타입 | 기본값 | 설명 |
+|----------|------|--------|------|
+| `window` | string | "game" | 창 이름 |
+
+**지원되는 창:**
+- `game` / `gameview` - Game View
+- `scene` / `sceneview` - Scene View
+- `console` - Console
+- `hierarchy` - Hierarchy
+- `project` - Project Browser
+- `inspector` - Inspector
+- `profiler` - Profiler
+- `animation` - Animation
+- `animator` - Animator
+
+**예제:**
+```
+OpenClaw에게: "Game 창으로 포커스 옮겨줘"
+```
+```json
+// 도구 호출
+{ "tool": "editor.focusWindow", "parameters": { "window": "game" } }
+
+// 응답
+{ "success": true, "window": "game", "focused": true }
+```
+
+### editor.listWindows - 열린 창 목록
+
+**설명:** 현재 열려있는 모든 Editor 창 목록을 반환합니다.
+
+**파라미터:** 없음
+
+**예제:**
+```
+OpenClaw에게: "현재 열린 Unity 창 목록 보여줘"
+```
+```json
+// 도구 호출
+{ "tool": "editor.listWindows", "parameters": {} }
+
+// 응답
+{
+  "success": true,
+  "windows": [
+    { "title": "Game", "type": "GameView", "focused": true, "position": "0,0,1920,1080" },
+    { "title": "Scene", "type": "SceneView", "focused": false, "position": "0,0,1920,1080" },
+    { "title": "Console", "type": "ConsoleWindow", "focused": false, "position": "0,600,1920,400" }
+  ],
+  "count": 3
+}
+```
+
 ---
 
 ## Input 도구
@@ -1060,6 +1118,6 @@ OpenClaw에게: "메뉴 네비게이션 테스트해줘. 설정 > 오디오 > �
 - [ ] Component 도구 (add, remove, get, set)
 - [ ] Application 도구 (getState, play, stop, pause)
 - [ ] Debug 도구 (log, screenshot, hierarchy)
-- [ ] Editor 도구 (refresh, recompile)
+- [ ] Editor 도구 (refresh, recompile, focusWindow, listWindows)
 - [ ] Input 도구 (keyPress, mouseClick, clickUI, type)
 - [ ] Play Mode 전환 시 연결 유지
