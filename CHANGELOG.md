@@ -2,26 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.1.0] - 2026-02-07
+
+### Added
+- **Editor Mode Support** - MCP connection now works without Play mode
+- `OpenClawConnectionManager` - Unified connection manager for Editor & Play mode
+- `OpenClawEditorBridge` - Editor-time initializer using `[InitializeOnLoad]`
+- Automatic reconnection on connection loss
+- Main thread execution queue for thread-safe tool calls
+
+### Changed
+- Renamed package from `openclaw-unity-bridge` to `openclaw-unity-mcp`
+- Display name changed to "OpenClaw Unity MCP"
+- Connection maintained across Edit/Play mode transitions
+- Deferred initialization to avoid Unity 6 UPM crashes
+
+### Fixed
+- UPM EPIPE crash on Unity 6 startup
+- Connection status display in Editor window
 
 ## [1.0.0] - 2026-02-07
 
 ### Added
 - Initial release
-- OpenClawBridge component for HTTP communication
-- OpenClawConfig for project settings
-- OpenClawLogger for console log capture
-- OpenClawTools with 25+ tools:
-  - Console tools (getLogs, clear)
-  - Scene tools (list, getActive, getData, load)
-  - GameObject tools (find, create, destroy, getData, setActive, setParent)
-  - Transform tools (setPosition, setRotation, setScale)
-  - Component tools (add, remove, get, set, list)
-  - Script tools (execute, read, list)
-  - Application tools (getState, play, pause, stop)
-  - Debug tools (log, screenshot, hierarchy)
-- OpenClawWindow editor window
-- Quick Setup wizard
-- Status overlay for Game view
-- Security controls for code execution and file access
+- 30+ Unity tools for AI interaction
+- Console log capture
+- Scene management
+- GameObject manipulation
+- Component editing
+- Play mode control
+- Debug tools (hierarchy, screenshot)
+- Status overlay in Game view
+- Configuration via ScriptableObject
